@@ -17,11 +17,44 @@ p_load(tidyverse)
 
 ```{r}
 master <- read_csv("Master/masterData.csv")
-exp_uebung <- read_csv("ExperimentelleUebung/CleaningData/Exp_Data.csv")
+exp_uebung <- read_csv("ExperimentelleUebung/Exp_Data.csv")
 ```
 ```{r}
 names(master)
 
 names(exp_uebung)
 ```
+
+```{r}
+
+master <- master %>% 
+  mutate(Leiter = "Stefan",
+        sex = ifelse(sex == 1, "W", "M"))
+exp_uebung <- exp_uebung %>% 
+  rename(sex = Geschlecht)
+
+namesInExp <- names(exp_uebung)
+namesInMaster <- names(master)
+namesInMasterNotInExp <- namesInMaster[!namesInMaster %in% namesInExp]
+namesInExpNotInMaster <- namesInExp[!namesInExp %in% namesInMaster]
+
+master[namesInExpNotInMaster] <- NA
+exp_uebung[namesInMasterNotInExp] <- NA
+
+namesInMaster <- names(master)
+
+# make order the same for exp_uebung
+exp_uebung <- exp_uebung %>%
+  select(all_of(namesInMaster))
+```
+
+```{r}
+data <- bind_rows(exp_uebung, master)
+```
+
+```{r}
+data <- data %>% select(-`sex_3_TEXT - Topics`)
+write_csv(data, "allData.csv")
+```
+
 
