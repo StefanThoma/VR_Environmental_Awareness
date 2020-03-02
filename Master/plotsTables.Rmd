@@ -1,0 +1,390 @@
+---
+title: "Plots and Tables"
+author: "Stefan P. Thoma"
+date: "8/14/2019"
+output: html_document
+---
+
+
+# Files for documents
+
+```{r load workspace and packages}
+pacman::p_load(tidyverse, knitr, ggplot2, ggthemes, dataMaid, DescTools, qwraps2, kableExtra, Hmisc, stargazer, lme4, rstan, brms, parallel, lmerTest, papaja, loo, ggpubr, tikzDevice, fmsb, viridis, hrbrthemes, colormap)
+set.seed(100)
+load("result.Rdata")
+
+```
+
+
+## Tables
+
+```{r model comp table nr}
+rnd <- 3
+
+nr_table <- round(as.data.frame(nr$confirmative$comparison, row.names = modelNames), rnd)
+nr_table$parameters <- row.names(nr_table)
+nr_table$DV <- rep("nr", times = 6)
+nr_table <- nr_table %>% select(DV, parameters, Df, AIC, BIC, logLik,  `Pr(>Chisq)`)
+rownames(nr_table) <- c()
+
+ccs_table <- round(as.data.frame(ccs$confirmative$comparison, row.names = modelNames), rnd)
+ccs_table$parameters <- row.names(ccs_table)
+ccs_table$DV <- rep("ccs", times = 6)
+ccs_table <- ccs_table %>% select(DV, parameters, Df, AIC, BIC, logLik, `Pr(>Chisq)`)
+rownames(ccs_table) <- c()
+
+nep_table <- round(as.data.frame(nep$confirmative$comparison, row.names = modelNames), rnd)
+nep_table$parameters <- row.names(nep_table)
+nep_table$DV <- rep("nep", times = 6)
+nep_table <- nep_table %>% select(DV, parameters, Df, AIC, BIC, logLik, `Pr(>Chisq)`)
+rownames(nep_table) <- c()
+
+nr_table <- round(as.data.frame(nr$confirmative$comparison, row.names = modelNames), rnd)
+nr_table$parameters <- row.names(nr_table)
+nr_table$DV <- rep("nr", times = 6)
+nr_table <- nr_table %>% select(DV, parameters, Df, AIC, BIC, logLik, `Pr(>Chisq)`)
+rownames(nr_table) <- c()
+
+
+model_table <- bind_rows(nep_table, ccs_table, nr_table, nr_table)
+
+knitr::kable(model_table, format = "latex")
+```
+
+```{r best models}
+nep_model <- round(as.data.frame(summary(nep$confirmative$models$hlm_time)$coefficients), rnd)
+nep_model <- nep_model %>%
+  mutate(parameter = row.names(nep_model),
+         DV = "nep ~") %>% 
+  select(DV, parameter, Estimate, `Std. Error`, df, `t value`, `Pr(>|t|)`)
+rownames(nep_model) <- c()
+
+ccs_model <- round(as.data.frame(summary(ccs$confirmative$models$hlm_ri_contr_ipq_interaction)$coefficients), rnd)
+ccs_model <- ccs_model %>%
+  mutate(parameter = row.names(ccs_model),
+         DV = "ccs ~") %>% 
+  select(DV, parameter, Estimate, `Std. Error`, df, `t value`, `Pr(>|t|)`)
+rownames(ccs_model) <- c()
+
+nr_model <- round(as.data.frame(summary(nr$confirmative$models$hlm_time)$coefficients), rnd)
+nr_model <- nr_model %>%
+  mutate(parameter = row.names(nr_model),
+         DV = "nr ~") %>% 
+  select(DV, parameter, Estimate, `Std. Error`, df, `t value`, `Pr(>|t|)`)
+rownames(nr_model) <- c()
+
+nr_model <- round(as.data.frame(summary(nr$confirmative$models$hlm_HE_contr)$coefficients), rnd)
+nr_model <- nr_model %>%
+  mutate(parameter = row.names(nr_model),
+         DV = "nr ~") %>% 
+  select(DV, parameter, Estimate, `Std. Error`, df, `t value`, `Pr(>|t|)`)
+rownames(nr_model) <- c()
+
+
+#bind together
+best_model <- bind_rows(nep_model, ccs_model, nr_model, nr_model)
+knitr::kable(best_model, format = "latex", booktabs = T)
+
+# After, manually add confidence intervalls in latex
+confint(nep$confirmative$models$hlm_time)
+confint(ccs$confirmative$models$hlm_ri_contr_ipq_interaction)
+confint(nr$confirmative$models$hlm_time)
+confint(nr$confirmative$models$hlm_HE_contr)
+
+
+summary(ccs$confirmative$models$hlm_ri_contr_ipq_interaction)
+```
+
+
+```{r bayes table}
+# nr
+b_nr_fixef <- round(as.data.frame(fixef(b_nr$confirmatory$models$random_intercept_contr)), rnd)
+b_nr_fixef$DV <- c("nr", "", "")
+b_nr_fixef$coefficients <- rownames(b_nr_fixef)
+b_nr_fixef$CI <- paste("[", b_nr_fixef$Q2.5, ", ", b_nr_fixef$Q97.5, "]", sep = "")
+b_nr_fixef <- b_nr_fixef %>% select(DV, coefficients, Estimate, CI, Est.Error)
+rownames(b_nr_fixef) <- c()
+
+
+# CCS
+b_ccs_fixef <- round(as.data.frame(fixef(b_ccs$confirmatory$models$random_intercept_contr_interaction_ipqint)), rnd)
+b_ccs_fixef$DV <- c("ccs", "", "", "", "", "", "", "")
+b_ccs_fixef$coefficients <- rownames(b_ccs_fixef)
+b_ccs_fixef$CI <- paste("[", b_ccs_fixef$Q2.5, ", ", b_ccs_fixef$Q97.5, "]", sep = "")
+b_ccs_fixef <- b_ccs_fixef %>% select(DV, coefficients, Estimate, CI, Est.Error)
+rownames(b_ccs_fixef) <- c()
+
+# nep
+b_nep_fixef <- round(as.data.frame(fixef(b_nep$confirmatory$models$random_intercept_contr_interaction_ipq)), rnd)
+b_nep_fixef$DV <- c("nep", "", "", "", "")
+b_nep_fixef$coefficients <- rownames(b_nep_fixef)
+b_nep_fixef$CI <- paste("[", b_nep_fixef$Q2.5, ", ", b_nep_fixef$Q97.5, "]", sep = "")
+b_nep_fixef <- b_nep_fixef %>% select(DV, coefficients, Estimate, CI, Est.Error)
+rownames(b_nep_fixef) <- c()
+
+# nr
+b_nr_fixef <- round(as.data.frame(fixef(b_nr$confirmatory$models$random_intercept_contr_interaction_ipq)), rnd)
+b_nr_fixef$DV <- c("nr", "", "", "", "")
+b_nr_fixef$coefficients <- rownames(b_nr_fixef)
+b_nr_fixef$CI <- paste("[", b_nr_fixef$Q2.5,", ", b_nr_fixef$Q97.5, "]", sep = "")
+b_nr_fixef <- b_nr_fixef %>% select(DV, coefficients, Estimate, CI, Est.Error)
+rownames(b_nr_fixef) <- c()
+
+
+b_bestModels <- bind_rows(b_nep_fixef, b_ccs_fixef, b_nr_fixef, b_nr_fixef)
+
+knitr::kable(b_bestModels, format = "latex", booktabs = T)
+```
+
+
+```{r}
+# make table including all hypothesis tests!
+equi <- bind_rows(nep_equi, ccs_equi, nr_equi, iat_equi, ipq_equi, sod_equi)
+equi[2:7] <- round(equi[2:7],3)
+
+equi$DV <- c("nep", "ccs", "nr", "iat", "ipq", "sod")
+
+equi <- equi %>% mutate(CI = paste("[", CI.Lower, ", ", CI.Upper, "]")) %>%
+  rename(BF = Evid.Ratio) %>%
+  select(DV, Hypothesis, CI, Estimate, BF, Post.Prob)
+  
+
+knitr::kable(equi, format = "latex", booktabs = T)
+plot(b_nep_hyp)
+
+
+#plot
+nep_equi_plot <- plot(b_nep_hyp)[[1]] + theme_tufte()
+ccs_equi_plot <- plot(b_ccs_hyp)[[1]] + theme_tufte()
+nr_equi_plot <- plot(b_nr_hyp)[[1]] + theme_tufte()
+iat_equi_plot <- plot(b_iat_hyp)[[1]] + theme_tufte()
+ipq_equi_plot <- plot(b_ipq_hyp)[[1]] + theme_tufte()
+sod_equi_plot <- plot(b_sod_hyp)[[1]] + theme_tufte()
+
+equi_plot <- ggpubr::ggarrange(nep_equi_plot,ccs_equi_plot,nr_equi_plot,iat_equi_plot,ipq_equi_plot,sod_equi_plot, nrow = 3, ncol = 2, labels = c("nep","ccs","nr","iat","ipq","sod")) 
+
+
+ggexport(equi_plot, filename = paste(d, "equiPlot.pdf", sep = ""), width = 7.5, height = 5)
+
+```
+
+
+## Plots for document
+
+```{r descriptives}
+# Create data frame in long format that contains all four vr_ev measures for the plot
+
+desc_plot_data <- gather(data, specific, value, vr_eval1:vr_eval5) %>%
+  filter(time==0) %>%
+  arrange(id, specific) %>%
+  mutate(specific = ifelse(specific=="vr_eval1", "excitement", 
+                        ifelse(specific=="vr_eval2", "graphically pleasing", 
+                               ifelse(specific=="vr_eval3", "pleasant", 
+                                      ifelse(specific=="vr_eval4", "realistic", "enjoyment")))),
+         VRE = ifelse(condition == "abstract", "Abstract+",
+                      ifelse(condition=="odd", "Real-", "Real+"))) %>%
+  select(specific, value, id, VRE)
+
+  
+vr_eval_plot <- ggplot(data = desc_plot_data, aes(x = specific, y = value, color = VRE)) + 
+  geom_violin(draw_quantiles = .5, width = 1)+
+  geom_jitter(alpha = .2, height = 0.2) +
+  ggthemes::theme_tufte() +
+  ylab("value") +
+  xlab("question")+
+  #labs(title="Evaluation of Virtual Environments")+
+  scale_y_continuous(breaks = c(1,3,5,7)) +
+  theme(legend.position = "bottom")
+  
+ipq_sod_plot_data <- gather(data, scale, value, c("ipq", "sod")) %>%
+  filter(time==0) %>%
+  arrange(id, scale) %>%
+  mutate(VRE = ifelse(condition == "abstract", "Abstract+",
+                      ifelse(condition=="odd", "Real-", "Real+"))) %>%
+  select(scale, value, id, VRE)
+
+
+ipq_sod_plot <- ggplot(data = ipq_sod_plot_data, aes(x = scale, y = value, color = VRE)) + 
+  geom_violin(draw_quantiles = .5, width = .8)+
+  geom_jitter(alpha = .3, height = 0.1) +
+  ggthemes::theme_tufte() +
+  ylab("scores") +
+  xlab("scale")+
+  #labs(title="Presence (IPQ) and Suspension of Disbelief (SOD)")+
+  scale_y_continuous(breaks = c(1,3,5,7), limits = c(1,7))
+
+# put the two plots together!
+plot_desc <- ggpubr::ggarrange(vr_eval_plot, ipq_sod_plot, nrow =2, heights = 3)  
+
+# where we want to save the files:
+d <- '/Users/st/Dropbox/Overleaf/Master Thesis/'
+
+
+tikz(paste(d, "ipqsodplot.tex", sep = ""), standAlone = FALSE, width= 6, height=4)
+ipq_sod_plot
+dev.off()
+tikz(paste(d, "descplot.tex", sep = ""), standAlone = FALSE, width= 6, height=4)
+vr_eval_plot
+dev.off()
+
+```
+
+```{r plot for iat}
+  # iat Diff plot
+  data <- data %>%   mutate(VRE = ifelse(condition == "abstract", "Abstract+",
+                      ifelse(condition=="odd", "Real-", "Real+"))) 
+    
+(iat_increase_plot <- ggplot(data = data %>% filter(time==0), aes(x = VRE, y = iat_diff, color = VRE)) +
+  geom_violin(draw_quantiles = .5) +
+  geom_jitter(width = .1, height = .1, alpha = .3)+
+  geom_abline(slope = 0, intercept = mean(data$iat_diff), alpha = .5, linetype = "dashed") +
+  ggthemes::theme_tufte() +
+  theme(legend.position = "none")+
+    ylab("iat increase") +
+    ggtitle("IAT increase by VRE"))
+  
+   
+  iat_time_plot <- ggplot(data, aes(x = time, y = iat, color = VRE, group = id)) +
+                         geom_line(alpha = .2) +
+    geom_smooth(inherit.aes = FALSE, aes(y = iat, x = time, color = VRE, fill = VRE), alpha = .1,method = "lm")+
+  ggthemes::theme_tufte() +
+ scale_x_continuous(breaks = c(0,1)) + 
+    ylab("iat score") +
+    theme(legend.position = "bottom")+
+    ggtitle("IAT by time")
+
+iat_plot <- ggpubr::ggarrange(iat_time_plot, iat_increase_plot, ncol =2)  
+ggexport(iat_plot, filename = paste(d,"iatplot.pdf", sep = ""), width = 6, height = 4)
+```
+
+
+```{r plot for ccs}
+  # ccs Diff plot
+
+ccs_increase_plot <- ggplot(data = data %>% filter(time==0), aes(x = VRE, y = ccs_diff, color = VRE)) +
+  geom_violin(draw_quantiles = .5) +
+  geom_jitter(width = .1, height = .1, alpha = .3)+
+  geom_abline(slope = 0, intercept = mean(data$ccs_diff), alpha = .5, linetype = "dashed") +
+  ggthemes::theme_tufte() +
+  theme(legend.position = "none")+
+    ylab("ccs increase") +
+    ggtitle("CCS increase by VRE")
+  
+   
+  ccs_time_plot <- ggplot(data, aes(x = time, y = ccs, color = VRE, group = id)) +
+                         geom_line(alpha = .1) +
+    geom_smooth(inherit.aes = FALSE, aes(y = ccs, x = time, color = VRE, fill = VRE), alpha = .1,method = "lm")+
+  ggthemes::theme_tufte() +
+  scale_x_continuous(breaks = c(0,1)) + 
+    ylab("ccs score") +
+    theme(legend.position = "none")+
+    ggtitle("CCS by time") +
+  coord_cartesian(ylim=c(1,1.75))
+  
+  
+  ccs_increase_plot_ipq <- ggplot(data = data %>% filter(time==0), aes(x = ipq, y = ccs_diff, color = VRE)) +
+    geom_smooth(inherit.aes = FALSE, aes(y = ccs_diff, x = ipq, color = VRE, fill = VRE), alpha = .1,method = "lm")+
+    #geom_violin(draw_quantiles = .5) +
+  geom_jitter(width = .1, height = .1, alpha = .3)+
+  #geom_abline(slope = 0, intercept = mean(data$ccs_diff), alpha = .5, linetype = "dashed") +
+  ggthemes::theme_tufte() +
+  #theme(legend.position = "none")+
+    ylab("ccs increase")  +
+    ggtitle("CCS increase by IPQ")
+  
+
+
+ccs_plot <- ggpubr::ggarrange(ggpubr::ggarrange( ccs_time_plot, ccs_increase_plot, ncol = 2),
+                              ccs_increase_plot_ipq,
+                              ncol =1, nrow = 2)  
+
+ggexport(ccs_plot, filename = paste(d,"ccsplot.pdf", sep = ""), width = 6, height = 4)
+
+```
+
+```{r plot for nr}
+  # nr Diff plot
+
+nr_increase_plot <- ggplot(data = data %>% filter(time==0), aes(x = VRE, y = nr_diff, color = VRE)) +
+  geom_violin(draw_quantiles = .5) +
+  geom_jitter(width = .1, height = .1, alpha = .3)+
+  geom_abline(slope = 0, intercept = mean(data$nr_diff), alpha = .5, linetype = "dashed") +
+  ggthemes::theme_tufte() +
+  theme(legend.position = "none")+
+    ylab("nr increase") +
+    ggtitle("NR increase by VRE")
+  
+   
+  nr_time_plot <- ggplot(data, aes(x = time, y = nr, color = VRE, group = id)) +
+                         geom_line(alpha = .1) +
+    geom_smooth(inherit.aes = FALSE, aes(y = nr, x = time, color = VRE, fill = VRE), alpha = .1,method = "lm")+
+  ggthemes::theme_tufte() +
+  scale_x_continuous(breaks = c(0,1)) + 
+    ylab("nr score") +
+    theme(legend.position = "none")+
+    ggtitle("NR by time") +
+  coord_cartesian(ylim=c(3.5, 4.3))
+  
+  
+  
+  nr_increase_plot_ipq <- ggplot(data = data %>% filter(time==0), aes(x = ipq, y = nr_diff, color = VRE)) +
+    geom_smooth(inherit.aes = FALSE, aes(y = nr_diff, x = ipq, color = VRE, fill = VRE), alpha = .2,method = "lm")+
+    #geom_violin(draw_quantiles = .5) +
+  geom_jitter(width = .1, height = .1, alpha = .1)+
+  #geom_abline(slope = 0, intercept = mean(data$nr_diff), alpha = .5, linetype = "dashed") +
+  ggthemes::theme_tufte() +
+  #theme(legend.position = "none")+
+    ylab("nr increase")  +
+    ggtitle("NR increase by IPQ")
+  
+
+
+nr_plot <- ggpubr::ggarrange(ggpubr::ggarrange( nr_time_plot, nr_increase_plot, ncol = 2),
+                              nr_increase_plot_ipq,
+                              ncol =1, nrow = 2)  
+
+ggexport(nr_plot, filename = paste(d,"nrplot.pdf", sep = ""), width = 6, height = 4)
+  
+```
+
+```{r plot for nep}
+  # nep Diff plot
+
+nep_increase_plot <- ggplot(data = data %>% filter(time==0), aes(x = VRE, y = nep_diff, color = VRE)) +
+  geom_violin(draw_quantiles = .5) +
+  geom_jitter(width = .1, height = .1, alpha = .3)+
+  geom_abline(slope = 0, intercept = mean(data$nep_diff), alpha = .5, linetype = "dashed") +
+  ggthemes::theme_tufte() +
+  theme(legend.position = "none")+
+    ylab("nep increase") +
+    ggtitle("NEP increase by VRE")
+  
+   
+  nep_time_plot <- ggplot(data, aes(x = time, y = nep, color = VRE, group = id)) +
+                         geom_line(alpha = .1) +
+    geom_smooth(inherit.aes = FALSE, aes(y = nep, x = time, color = VRE, fill = VRE), alpha = .1,method = "lm")+
+  ggthemes::theme_tufte() +
+  scale_x_continuous(breaks = c(0,1)) + 
+    ylab("nep score") +
+    theme(legend.position = "none") +
+    ggtitle("NEP by time") +
+  coord_cartesian(ylim=c(3.7, 4.))
+  
+  nep_increase_plot_ipq <- ggplot(data = data %>% filter(time==0), aes(x = ipq, y = nep_diff, color = VRE)) +
+    geom_smooth(inherit.aes = FALSE, aes(y = nep_diff, x = ipq, color = VRE, fill = VRE), alpha = .1,method = "lm")+
+    #geom_violin(draw_quantiles = .5) +
+  geom_jitter(width = .1, height = .1, alpha = .3)+
+  #geom_abline(slope = 0, intercept = mean(data$nep_diff), alpha = .5, linetype = "dashed") +
+  ggthemes::theme_tufte() +
+  #theme(legend.position = "none")+
+    ylab("nep increase") +
+    ggtitle("NEP increase by IPQ")
+  
+
+
+nep_plot <- ggpubr::ggarrange(ggpubr::ggarrange( nep_time_plot, nep_increase_plot, ncol = 2),
+                              nep_increase_plot_ipq,
+                              ncol =1, nrow = 2)  
+
+ggexport(nep_plot, filename = paste(d,"nepplot.pdf", sep = ""), width = 6, height = 4)
+```

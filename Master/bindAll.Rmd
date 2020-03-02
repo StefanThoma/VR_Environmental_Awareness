@@ -1,0 +1,59 @@
+---
+title: "bindAll"
+author: "Stefan P. Thoma"
+date: "7/20/2019"
+output: html_document
+---
+
+
+# Setup
+```{r setup}
+pacman::p_load(tidyverse, knitr, lubridate, ggthemes)
+set.seed(100)
+```
+
+
+# Rerun scripts
+```{r rerun scripts, results="hide"}
+knit("bindQualtrics.Rmd")
+knit("bindHeartRate.Rmd")
+knit("bindIAT.Rmd")
+rm(list=ls())
+```
+
+# Load data
+```{r load data}
+iat <- read_csv("iat_result.csv") %>% arrange(participant, time) #%>%
+iat <- iat %>% 
+  rename(id = participant) %>% 
+  mutate(time = ifelse(time == "001", 1, 2))
+heart <- read_csv("hr_open_data.csv") %>% 
+  select(-X1, -`participant nr.`, -date, -ends_with("End"), -ends_with("Start")) 
+qualtrix <- read_csv("qualtrix.csv")
+qualtrix <- qualtrix %>% group_by(id) %>%
+  mutate(timeBtwnTestings_inH = seconds_to_period(difftime(StartDate[time==2],StartDate[time==1]))) %>% 
+  ungroup()
+
+
+```
+
+```{r bind together}
+data <- merge(iat, qualtrix)
+heart$id <- pander::trim.spaces(heart$id)
+data <- merge(data, heart)
+```
+# Pseudonymize
+```{r Psydonymize}
+for(i in unique(data$id)){
+    randNum <- i
+    while(randNum %in% data$id){
+      randNum <- paste(sample(0:9, 8, replace = TRUE), collapse = "" )}
+    data$id[data$id==i] <- randNum
+}
+```
+
+```{r write data}
+write_csv(data, "masterData.csv")
+```
+
+

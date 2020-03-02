@@ -1,0 +1,27 @@
+---
+title: "Datenaufbereitung"
+author: "Stefan P. Thoma"
+date: "3/2/2020"
+output: html_document
+---
+
+# Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (!require("pacman")) install.packages("pacman")
+p_load(tidyverse)
+```
+
+# Load Data
+
+```{r}
+master <- read_csv("Master/masterData.csv")
+exp_uebung <- read_csv("ExperimentelleUebung/CleaningData/Exp_Data.csv")
+```
+```{r}
+names(master)
+
+names(exp_uebung)
+```
+

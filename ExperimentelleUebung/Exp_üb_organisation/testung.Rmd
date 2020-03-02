@@ -1,0 +1,39 @@
+---
+title: "sheet"
+author: "Stefan Thoma"
+date: "10/15/2019"
+output: html_document
+---
+
+# Setup
+
+```{r setup, include=FALSE}
+set.seed(100)
+knitr::opts_chunk$set(echo = TRUE)
+if (!require("pacman")) install.packages("pacman")
+p_load(tidyverse)
+```
+
+# Simulate Data
+
+```{r}
+n_per_tester <- 15
+# parameters
+names <- c("julia.wyss", "anna.roesli", "alina.schaerer", "fabia.somalvico", "nora.schaer")
+
+n <- n_per_tester*length(names)
+condition <- c("video", "text.bild", "text")
+conditions <- rep(condition, times = n_per_tester/length(condition))
+
+condition <- sample(conditions, n_per_tester, replace = FALSE)
+for(i in 1:4){
+  condition <- c(condition, sample(conditions, n_per_tester, replace = FALSE))
+}
+
+dataframe <- data.frame(names = rep(names, each = n_per_tester),
+                        condition = condition)
+```
+
+```{r}
+write.csv(dataframe, "testung.csv")
+```

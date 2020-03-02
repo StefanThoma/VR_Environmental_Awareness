@@ -37,3 +37,8 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+ExperimentelleUebung/.DS_Store
+*.html
+*.log
+*.psydat
+ExperimentelleUebung/CleaningData/.DS_Store
