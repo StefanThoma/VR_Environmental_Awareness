@@ -50,11 +50,109 @@ exp_uebung <- exp_uebung %>%
 
 ```{r}
 data <- bind_rows(exp_uebung, master)
+data <- data %>% select(-`sex_3_TEXT - Topics`)
+```
+
+## Recode Items
+### Define Items to recode
+
+We can actually look at the data to see which items are reversely coded.
+This should be done only as a confirmation. 
+The decision should be made based on the papers introducing the respective scale.
+Also, it should be fairly obvious which are reversely coded when reading the questions.
+
+Look what data looks like regarding coding.
+Checked with a principal component analysis.
+```{r, eval = FALSE}
+psych::pca(r = data %>% select(starts_with("nep")))
+psych::pca(r = data %>% select(starts_with("nr")))
+psych::pca(r = data %>% select(starts_with("ccs")))
+psych::pca(r = data %>% select(starts_with("ipq")))
+psych::pca(r = data %>% select(starts_with("sod"))) # looks like sod_1 is kinda different! 
+# But according to theory, this is correctly coded. 
+```
+Define Items to be recoded.
+```{r}
+# define items to be recoded (as defined in the papers)
+nep_reorder <- paste("nep", c(2, 4, 6, 8, 10, 12, 14), sep = "")
+nr_reorder <- paste("nr", c(2, 3, 10, 11, 13, 14, 15, 18), sep = "")
+# in the ccs, they are all coded the same way. 
+ipq_reorder <- paste("ipq", c(3, 9, 11), sep = "") 
+sod_reorder <- paste("sod", c( 2, 4, 5, 6, 7, 8), sep = "_")
+```
+
+Check on what scale the items are coded:
+```{r, EVAL = FALSE}
+range(data %>% select(starts_with("nep"))) # 1 to 5 so 1 becomes 5, 2 becomes 4, etc...
+range(data %>% select(starts_with("nr"))) # 1 to 5 so 1 becomes 5, 2 becomes 4, etc...
+range(data %>% select(starts_with("ccs"))) # 1 to 5 so 1 becomes 5, 2 becomes 4, etc...
+summary(data %>% select(starts_with("ipq"))) # 1 to 7 so 1 becomes 7, 2 becomes 6, etc...
+summary(data %>% select(starts_with("sod"))) # 1 to 7  so 1 becomes 7, 2 becomes 6, etc...
+```
+
+### helping function
+```{r recode}
+umpolen7 <- function(items, dat){
+  for(i in items){
+    
+    dat[[i]] <- ifelse(dat[[i]] == 1, 7, 
+                       ifelse(dat[[i]] == 2, 6, 
+                              ifelse(dat[[i]] == 3, 5, 
+                                     ifelse(dat[[i]] == 4, 4, 
+                                            ifelse(dat[[i]] == 5, 3, 
+                                                   ifelse(dat[[i]] == 6, 2, 
+                                                          ifelse(dat[[i]] == 7, 1, NA)))))))
+    
+  }
+  return(dat)
+}
+
+umpolen5 <- function(items, dat){
+  for(i in items){
+    
+    dat[[i]] <- ifelse(dat[[i]] == 1, 5, 
+                       ifelse(dat[[i]] == 2, 4, 
+                              ifelse(dat[[i]] == 3, 3, 
+                                     ifelse(dat[[i]] == 4, 2, 
+                                            ifelse(dat[[i]] == 5, 1, NA)))))
+  }
+  return(dat)
+}
+
+
+```
+### finally recode
+```{r}
+data_clean <- umpolen7(c(sod_reorder, ipq_reorder), dat = data)
+
+data_clean <- umpolen5(c(nep_reorder, nr_reorder), dat = data_clean)
+```
+### did it work?
+```{r}
+data <- data %>% filter(Leiter != "Stefan") 
+psych::pca(r = data_clean %>% select(starts_with("nep")))
+psych::pca(r = data_clean %>% select(starts_with("nr")))
+psych::pca(r = data_clean %>% select(starts_with("ccs")))
+psych::pca(r = data_clean %>% select(starts_with("ipq")))
+psych::pca(r = data_clean %>% select(starts_with("sod")))
+```
+Again,  it becomes apparent that sod_1 is weird. Go and check the question and think why this could be. 
+Should we still keep it in the analysis?
+
+# Calculate score means
+I just calculate it for one of the scores. The rest you have to do yourself. 
+
+```{r  score means}
+data_clean$nep <- rowMeans(data_clean %>% select(starts_with("nep")))
+data_clean$nr <- rowMeans(data_clean %>% select(starts_with("nr")))
+data_clean$ccs <- rowMeans(data_clean %>% select(starts_with("ccs")))
+data_clean$ipq <- rowMeans(data_clean %>% select(starts_with("ipq")))
+data_clean$sod <- rowMeans(data_clean %>% select(starts_with("sod")))
+data_clean$ses <- rowMeans(data_clean %>% select(starts_with("SES")))
 ```
 
 ```{r}
-data <- data %>% select(-`sex_3_TEXT - Topics`)
-write_csv(data, "allData.csv")
+write_csv(data_clean, "allData.csv")
 ```
 
 

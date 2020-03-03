@@ -1,0 +1,30 @@
+---
+title: "Analysis"
+author: "Stefan P. Thoma"
+date: "3/3/2020"
+output: html_document
+---
+
+# Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (!require("pacman")) install.packages("pacman")
+p_load(tidyverse)
+```
+
+## Load Data
+```{r load data}
+data <- read_csv("allData.csv") 
+data <- data %>% select(
+  id, time, iat, ccs, nr, nep, ipq, sod, ses, age, edu, sex, pol, vr_exp, vr_eval1, vr_eval2, vr_eval3,
+  vr_eval4, vr_eval5, span, seen, condition, starts_with("Frage"), hr_mean, Leiter, Anmerkungen, Zeit
+)
+
+head(data)
+```
+
+
+```{r}
+```
+
