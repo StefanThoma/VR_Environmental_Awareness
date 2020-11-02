@@ -10,21 +10,165 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 if (!require("pacman")) install.packages("pacman")
-p_load(tidyverse)
+p_load(tidyverse, lme4, lmerTest, mvoutlier, nlme, multcomp, lsmeans)
 ```
 
 ## Load Data
 ```{r load data}
 data <- read_csv("allData.csv") 
-data <- data %>% select(
+data <- data %>% dplyr::select(
   id, time, iat, ccs, nr, nep, ipq, sod, ses, age, edu, sex, pol, vr_exp, vr_eval1, vr_eval2, vr_eval3,
   vr_eval4, vr_eval5, span, seen, condition, starts_with("Frage"), hr_mean, Leiter, Anmerkungen, Zeit
 )
 
 head(data)
+
+# factor for vr or not
+data <- data %>% group_by(id) %>% 
+  mutate(
+    vr = ifelse(condition %in% c("a", "b", "c"), TRUE, FALSE)
+  )
+
+```
+## Check for multivariate outlier
+
+```{r}
+# mvoutlier::chisq.plot(data[,c(3:6)])
+# [1] 124 162 161  29  54
+
+rmId <- data$id[c(124, 161, 162)]
+
+data <- data %>% filter(!id %in% rmId)
+```
+
+# Analysis
+
+First, we find an acceptable model for each DV. 
+
+
+```{r}
+df_env <- data[c("iat", "ccs", "nr", "nep")]
+psych::fa.parallel(df_env)
+prc_env <- princomp(df_env, cor = TRUE)
+# Seems like one factor might just be enough. However, this may be more revealing when done
+# on raw data
+summary(prc_env)
+data$env_pc <- prc_env$scores[,1]
 ```
 
 
 ```{r}
+data <- as.data.frame(data)
+data_grouped <- 
+  groupedData(formula = env_pc ~ time | id,
+              data = data)
+plot(data_grouped, grid = F)
 ```
+
+
+# Univariate HLM 
+
+## With PC1
+```{r}
+data$condition <- as.factor(data$condition)
+data$time <- as.factor(data$time)
+fm_ri <- lmer(data = data, env_pc ~ condition + time + condition:time+ (1 | id))
+fm_ri2 <- lmer(data = data, env_pc ~ condition + time + vr*time + (1 | id))
+fm_ri3 <- lmer(data = data, env_pc ~ vr + time + vr*time + (1 | id))
+
+
+#fm_rc <- lmer(data = data, env_pc ~ condition*time + ( time + 0  | id))
+
+anova(fm_ri, fm_ri2, fm_ri3)
+
+# Random Intercept for this model seems to suffice
+summary(fm_ri3)
+```
+## VR conditions compared
+
+
+## VR vs non-VR
+
+
+
+
+# Multivariate HLM
+```{r}
+mv_model <- lmer(data = data, formula = iat + ccs + nr + nep ~ time * vr + (1 |  id))
+summary(mv_model)
+plot(mv_model)
+```
+
+
+# Plots
+
+```{r}
+data <- data %>% 
+  group_by(id) %>% 
+  mutate(iat_diff = iat[time == 2]- iat[time == 1],
+         ccs_diff = ccs[time == 2]- ccs[time == 1],
+         nep_diff = nep[time == 2]- nep[time == 1],
+         nr_diff  = nr [time == 2]- nr [time == 1]
+         )
+
+
+data.plot <- data %>% 
+  gather(key = dv, value = value, iat_diff:nr_diff) %>%
+  filter(time == 1)
+
+
+label <- paste(rep(c("ccs", "iat", "nep", "nr"), each = 2), c(" 2D", " vr"), sep = "")
+ggplot(data = data.plot, aes(y = value, x = interaction(vr, dv), col = vr, shape = vr)) +
+  geom_jitter(width = .05) + 
+  geom_boxplot() +
+  scale_x_discrete(labels  =  label)
+```
+
+```{r}
+data.plot2 <- data %>% 
+  filter(time == 1)
+
+plotcond <- function(dv, data2 = data.plot2){
+  #data2 <- data.plot2
+  data2$dv <- data2[[dv]]
+  ggplot(data = data2, aes(y = `$`(data2, dv), x = condition, col = condition, shape = vr)) +
+  geom_jitter(width = .05) + 
+  geom_boxplot(fill = NA)+
+  geom_abline(intercept = 0, slope = 0, size = .1)+
+  ylab(dv) + 
+  ggthemes::theme_tufte() + 
+  ggtitle(paste("Difference of ", dv, " values by condition", sep = ""))
+  
+  }
+
+diff_dvs <- colnames(data %>% dplyr::select(ends_with("diff")))[-1]
+
+lapply(diff_dvs, plotcond)
+```
+
+```{r}
+lin_function <- function(y, x = c("vr*time", "(1|id)"), data.temp = data){
+#  x <- c("vr*time", "(1|id)")
+#  y <- dvs[1]
+#  x = c("condition", "(1|id)")
+#  y <-  "iat_diff"
+form <- reformulate(response = y,termlabels = x, intercept = T)
+#lm(form, data = data)
+lmer_model <- lmer(form, data = data.temp)
+lmer_model <- list(summary(lmer_model))
+names(lmer_model) <- paste(form[c(2,1,3)], collapse = "")
+
+return(lmer_model)
+}
+dvs <- c("iat", "ccs", "nep", "nr")
+
+lapply(dvs, lin_function)
+
+lapply(dvs, lin_function, x = c("time", "(1|id)"))
+```
+
+```{r}
+
+```
+
 
