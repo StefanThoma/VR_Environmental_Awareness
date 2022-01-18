@@ -16,8 +16,8 @@ p_load(tidyverse)
 # Load Data
 
 ```{r}
-master <- read_csv("Master/masterData.csv")
-exp_uebung <- read_csv("ExperimentelleUebung/Exp_Data.csv")
+master <- read_csv("data/Master/masterData.csv")
+exp_uebung <- read_csv("data/ExperimentelleUebung/Exp_Data.csv")
 ```
 ```{r}
 names(master)
@@ -152,7 +152,7 @@ data_clean$ses <- rowMeans(data_clean %>% select(starts_with("SES")))
 ```
 
 ```{r}
-write_csv(data_clean, "allData.csv")
+write_csv(data_clean, "data/cleanData.csv")
 ```
 
 
