@@ -93,48 +93,71 @@ This plot is not very useful I guess. Too crowded.
 
 # Univariate HLM 
 
+
+So we will create two models for each dependent variables: 
+
+First, the model will have the formula: 
+
+`dv ~ condition * time + (time | id)`
+
+This will be simplified to the following model if model fit is singular:
+
+`dv ~ condition * time + (1 | id)`
+
+This will estimate a random intercept for each participant. 
+This model will only take as input the vr conditions (`a`, `b` & `c`), or: `vr == TRUE`.
+
+The second model will have the formula: 
+
+`dv ~ vr * time + (time | condition) + (1 | id)`
+
+Where a random slope for time is estimated per condition. 
+Further, there is a random intercept per condition, and per id. 
+
+Should model fit be singular, we would simplify the model to: 
+
+`dv ~ vr * time + (1 | condition) + (1 | id)`
+
+If still singular, we would simplify to: 
+
+`dv ~ vr * time + (1 | id)`
+
+
+
+
+
+
 ## Helping function 
-### RM ANOVA (just backup)
-```{r, eval = F}
-fit.aov <- function(form, dat){
-  aov(formula = form, data = dat)
-}
 
-rmanova <- function(dv, condition = "condition", cov = NULL, ...){
-  ##########
-  #dv <- "nep"
-  #cov = c("age", "gender")
-  ##########
-  
-  iv <- numeric(3)
-  
-  iv[1] <- "time"
-  iv[2] <- paste(iv_1, condition, sep = " + ")
-  iv[3] <- paste(iv_2, paste("time", condition, sep = ":"), sep = " + ")
-  
-  if(!is_null(cov)){
-  models <- paste(paste(dv, " ~ ", sep = ""), iv," + ", paste(cov, collapse = " + "),"  + Error(id)", sep = "")
-    
-  } else {models <- paste(paste(dv, " ~ ", sep = ""), iv," + Error(id)", sep = "")}
-  
-  models <- lapply(models, as.formula)
-  
-  fits <- lapply(models, fit.aov, ...)
-  names(fits) <- models
-  
-  summaries <- lapply(fits, summary)
-  names(summaries) <- models
-
-  ret.list <- list("fits" = fits, "summaries" = summaries)
-  
-  return(ret.list)
-}
-```
-#### Better in HLM style -> anova works
 ```{r}
 fit.lme <- function(form, dat){
   lme4::lmer(formula = form, data = dat)
 }
+```
+
+```{r}
+predictors <- "condition + (1 | id)"
+dv <- "iat"
+dat <- data 
+
+fit_models <- function(predictors, dat){
+# this function returns a function which fits a model based on a formula minus the dv. 
+# This function can be used in the next function which implements the conditions for reducing model complexity if model fit is singular.
+  function(dv){
+    form <- formula(paste(dv, predictors, sep = " ~ "))
+    fit <- fit.lme(form = form, dat = dat)
+  }
+}
+```
+
+
+
+
+
+# old code
+
+#### HLM helper
+```{r}
 
 rmlm <- function(dv, condition = "condition", cov = NULL, ...){
   ##########
@@ -311,26 +334,6 @@ diff_dvs <- colnames(data %>% dplyr::select(ends_with("diff")))[-1]
 lapply(diff_dvs, plotcond)
 ```
 
-```{r, include = F}
-lin_function <- function(y, x = c("vr*time", "(1|id)"), data.temp = data){
-#  x <- c("vr*time", "(1|id)")
-#  y <- dvs[1]
-#  x = c("condition", "(1|id)")
-#  y <-  "iat_diff"
-form <- reformulate(response = y,termlabels = x, intercept = T)
-#lm(form, data = data)
-lmer_model <- lmer(form, data = data.temp)
-lmer_model <- list(summary(lmer_model))
-names(lmer_model) <- paste(form[c(2,1,3)], collapse = "")
-
-return(lmer_model)
-}
-dvs <- c("iat", "ccs", "nep", "nr")
-
-lapply(dvs, lin_function)
-
-lapply(dvs, lin_function, x = c("time", "(1|id)"))
-```
 
 
 # Tables for models 
