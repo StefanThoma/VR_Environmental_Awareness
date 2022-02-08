@@ -161,8 +161,8 @@ fit_models <- function(dv, dat){
 
 ```{r}
 predictors.vr <-  c("condition * time + (time | id)", "condition * time + (1 | id)")
-predictors.all <- c("vr * time + (time | condition) + (1 | id)", "vr * time + (1 | condition) + (1 | id)", "vr * time + (1 | id)")
-
+predictors.all <- c("vr * time + (time | condition) + (1 | id)", "vr * time + (-1 + time | condition) + (1 | id)", "vr * time + (1 | id)")
+predictors.all2 <- c("vr * time + (time | condition) + (1 | id)", "vr * time + (1 | condition) + (1 | id)", "vr * time + (1 | id)")
 # function to fit various models based on different inputs of predictors
 fit_many <- function(pred.vector, dat, dv){
   fit_model <- fit_models(dv, dat)
@@ -191,11 +191,11 @@ dvs <-  c("iat", "ccs", "nr", "nep", "env_pc")
 ```
 
 
-## vr data
+## Initial model fitting
 
 ```{r}
 # split data frame:
-data.vr <- data %>% filter(!vr) 
+data.vr <- data %>% filter(vr) 
 ```
 
 ```{r}
@@ -206,6 +206,19 @@ vr.models <- lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors.vr
 ```{r}
 all.models  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors.all, dat = data, dv = dv))
 ```
+
+
+```{r}
+all.models2  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors.all2, dat = data, dv = dv))
+```
+```{r}
+#NEP
+anova(all.models2[[4]], all.models[[4]])
+
+all.models2[[4]]
+all.models[[4]]
+```
+
 
 
 
@@ -231,7 +244,7 @@ plot_diagn <- function(model){
 }
 
 ```
-```{r, eval = FALSE}
+```{r, eval = TRUE}
 lapply(vr.models, FUN = plot_diagn)
 lapply(all.models, FUN = plot_diagn)
 
@@ -373,16 +386,39 @@ performance::check_model(all.env_pc2)
 Transformation does not help much here. Lets not do it. 
 
 
+But let us save the final model diagnostics plots as well.
+```{r, eval = TRUE}
+lapply(vr.models, FUN = plot_diagn)
+lapply(all.models, FUN = plot_diagn)
+
+```
+
 ## look at model summaries
+
 ### vr
 
 ```{r}
-lapply(vr.models, FUN = summary)
+lapply(vr.models, FUN = lmerTest:::summary.lmerModLmerTest)
 ```
 
 ### all
 ```{r}
-lapply(all.models, FUN = summary)
+lapply(all.models, FUN = lmerTest:::summary.lmerModLmerTest)
+```
+## Model comparisons
+
+
+For the three VE conditions we need ot test the predictor `condition` with model comparisons.
+
+
+
+```{r}
+compare.models <- function(model){
+  model0 <- update(model, .~. - time:condition)
+  anova(model0, model)
+}
+
+lapply(vr.models, compare.models)
 ```
 
 <!-- # old code -->
@@ -567,69 +603,89 @@ lapply(all.models, FUN = summary)
 
 
 
-<!-- # Tables for models  -->
-<!-- ```{r} -->
-
-<!-- lmermods <- vr.vs.nonvr.res[1][[1]]$fits -->
-
-<!-- make.x.table <- function(lmermods, save = T, add = ""){ -->
-<!--   dv <- as.character(formula(lmermods[[1]]))[2] -->
-
-<!--   # confidence intervals: -->
-<!--   fixed.effects.list <- lapply(lmermods, FUN = function(x){ -->
-<!--     # get fixed effects table -->
-<!--     fix.temp <- round(as.data.frame(summary(x)$coefficients), 3) -->
-
-<!--     # calculate and round confidence intervals -->
-<!--     conf.temp <- as.data.frame(confint(x, method = "profile")) -->
-<!--     conf.temp <- round(conf.temp, 3) -->
-<!--     conf.temp$CI <- paste("[", conf.temp[,1], "; ", conf.temp[,2],"]", sep = "") -->
-
-<!--     # put together -->
-<!--     fix.temp$CI <- conf.temp$CI[-c(1:2)] -->
-
-<!--    fix.temp["deleteme"] <- "" -->
-<!--    #fix.temp[paste(dv, " ~", sep = "")][1,] <-paste(formula(x))[3] -->
-<!--    fix.temp["deleteme"][1,] <- "deleteme" -->
+## Tables for models
+```{r}
 
 
-<!--     fix.temp <- rownames_to_column(fix.temp, var = " ") -->
-<!--     fix.temp <- fix.temp[, c(1, 2, 5, 3, 4, 6)] -->
+make.x.table <- function(lmermods, save = TRUE, add = ""){
+  lapply(lmermods, function(x) formula(x)[2])
+  dvs <- as.character(lapply(lmermods, function(x) as.character(formula(x)[2])))
+  iv <- sub("\\ .*", "", lmermods[[1]]@call$formula[3])
+
+  
+  
+  helpf <- function(x){
+    # get fixed effects table
+    fix.temp <- round(as.data.frame(summary(x)$coefficients), 3)
+
+    # calculate and round confidence intervals
+    conf.temp <- as.data.frame(confint(x, method = "profile"))
+    conf.temp <- round(conf.temp, 3)
+    conf.temp$CI <- paste("[", conf.temp[,1], "; ", conf.temp[,2],"]", sep = "")
+
+    # put together
+    fix.temp$CI <- conf.temp$CI[!startsWith(rownames(conf.temp), ".")]
+
+   fix.temp["DV"] <- ""
+   #fix.temp[paste(dv, " ~", sep = "")][1,] <-paste(formula(x))[3]
+   fix.temp["DV"][1,] <- "deleteme"
 
 
-<!--     # return value -->
-<!--     return(fix.temp) -->
-
-<!--   }) -->
+    fix.temp <- rownames_to_column(fix.temp, var = "Coef")
+    fix.temp <- fix.temp[, c(6, 1, 2, 5, 3, 4)]
 
 
-<!--   fixed.effects.df <- do.call("rbind", fixed.effects.list) -->
-<!--   l.temp <- length(rownames(fixed.effects.df)) -->
-<!--   cond <- toupper(strsplit(rownames(fixed.effects.df)[l.temp], split = " ")[[1]][5]) -->
+    # return value
+    return(fix.temp)
+  }
+  
+  
+  
+  # confidence intervals:
+  fixed.effects.list <- lapply(lmermods, FUN = helpf)
 
-<!--   rownames(fixed.effects.df) <- NULL -->
-<!--   tabl <- xtable(fixed.effects.df[-6],  -->
-<!--                  caption = paste(toupper(dv), "models by", cond,  add),  -->
-<!--                  label = paste("tab:",add , dv, "-models-by-", cond, sep = "")) -->
 
-<!--   if(save == T){ -->
 
-<!--   print.xtable(tabl, file = paste("../tex/tables/", add, dv, "-by", cond, "-modeltable.tex", sep = ""),  -->
-<!--                include.rownames=FALSE, -->
-<!--                hline.after = c(-1, c(which(fixed.effects.df[6]!="")-1), nrow(tabl)), -->
-<!--                add.to.row = list(list(-1), c(paste("\\hspace{-3mm}", toupper(dv), "$\\sim$%"))) -->
-<!--                ) -->
-<!--   }else{ -->
-<!--   print.xtable(tabl,# file = paste("../tex/tables/", dv, "-by", cond, "-modeltable.tex", sep = ""),  -->
-<!--                include.rownames=FALSE, -->
-<!--                hline.after = c(-1, c(which(fixed.effects.df[6]!="")-1), nrow(tabl)), -->
-<!--                add.to.row = list(list(-1), c(paste("\\hspace{-3mm}", toupper(dv), "$\\sim$%"))) -->
-<!--                )} -->
+  fixed.effects.df <- do.call("rbind", fixed.effects.list)
+  fixed.effects.df$DV[fixed.effects.df$DV=="deleteme"] <- dvs
+  
+  #l.temp <- length(rownames(fixed.effects.df))
+  #cond <- toupper(strsplit(rownames(fixed.effects.df)[l.temp], split = " ")[[1]][5])
 
-<!--   # which(fixed.effects.df[2]!="")-1 -->
-<!--   # this saves directly into my .tex folder -->
-<!-- } -->
-<!-- ``` -->
+  rownames(fixed.effects.df) <- NULL
+  tabl <- xtable(fixed.effects.df[-6],
+                 caption = paste(toupper(iv), "Models",  add),
+                 label = paste("tab:",add , iv, "-models", sep = ""))
+
+  if(save){
+
+  print.xtable(tabl, file = paste("analysisOutputs/tables/", add, iv, "-modeltable.tex", sep = ""),
+               include.rownames=FALSE,
+               hline.after = c(-1, c(which(fixed.effects.df[1]!="")-1), nrow(tabl))#,
+               #add.to.row = list(list(-1), c(paste("\\hspace{-3mm}", toupper(dv), "$\\sim$%")))
+               )
+  }else{
+  print.xtable(tabl, #file = paste("analysisOutputs/tables/", add, dv, "-by", cond, "-modeltable.tex", sep = ""),
+               include.rownames=FALSE,
+               hline.after = c(-1, c(which(fixed.effects.df[1]!="")-1), nrow(tabl))#,
+               #add.to.row = list(list(-1), c(paste("\\hspace{-3mm}", toupper(dv), "$\\sim$%")))
+               )}
+
+  # which(fixed.effects.df[2]!="")-1
+  # this saves directly into my .tex folder
+}
+```
+
+
+```{r}
+
+
+make.x.table(all.models)
+make.x.table(vr.models)
+```
+
+
+# Plots
 
 <!-- ```{r} -->
 <!-- # make anova table for latex -->
@@ -1341,8 +1397,3 @@ lapply(all.models, FUN = summary)
 
 
 <!-- ``` -->
-
-
-
-
-
