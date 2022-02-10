@@ -208,10 +208,10 @@ all.models  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors
 ```
 
 
-```{r}
+```{r, include = FALSE}
 all.models2  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors.all2, dat = data, dv = dv))
 ```
-```{r}
+```{r, include = FALSE}
 #NEP
 anova(all.models2[[4]], all.models[[4]])
 
@@ -325,7 +325,7 @@ And based on the transformed ccs:
 data.vr <- data.vr %>% 
   mutate(ccs_bc = (ccs^lambda_ccs-1)/lambda_ccs)
 
-vr.ccs2 <- fit_many(pred.vector = predictors.vr, dat = data, dv = "ccs_bc")
+vr.ccs2 <- fit_many(pred.vector = predictors.vr, dat = data.vr, dv = "ccs_bc")
 performance::check_model(vr.ccs2)
 ```
 
@@ -680,12 +680,26 @@ make.x.table <- function(lmermods, save = TRUE, add = ""){
 ```{r}
 
 
-make.x.table(all.models)
-make.x.table(vr.models)
+make.x.table(all.models, save = FALSE)
+make.x.table(vr.models, save = FALSE)
+```
+
+```{r}
+
+
+make.x.table(all.models, save = TRUE)
+make.x.table(vr.models, save = TRUE)
 ```
 
 
 # Plots
+
+
+VE vs non VE plots:
+```{r}
+
+```
+
 
 <!-- ```{r} -->
 <!-- # make anova table for latex -->
@@ -910,42 +924,42 @@ make.x.table(vr.models)
 <!-- data$span -->
 <!-- ``` -->
 
-<!-- I would like to get a table / data structure that gives me the mean values for each combination of relevant time and condition -->
-<!-- ## CI plot -->
-<!-- ```{r} -->
-<!-- ci.plot <- function(colorby = "condition"){ -->
-<!-- #colorby = "condition"   -->
-<!-- #df <- vr.res.md.comp.mean -->
-<!--   pos <- ifelse(colorby=="condition", "dodge2", "identity") -->
+I would like to get a table / data structure that gives me the mean values for each combination of relevant time and condition
+## CI plot
+```{r}
+ci.plot <- function(colorby = "condition"){
+#colorby = "condition"
+#df <- vr.res.md.comp.mean
+  pos <- ifelse(colorby=="condition", "dodge2", "identity")
 
-<!--   function(df){ -->
-<!--     df$cond <- df[[colorby]] -->
+  function(df){
+    df$cond <- df[[colorby]]
 
-<!--   if(colorby != "condition"){ -->
-<!--     df <- df %>% dplyr::filter(condition=="a"|condition=="text" ) -->
+  if(colorby != "condition"){
+    df <- df %>% dplyr::filter(condition=="a"|condition=="text" )
 
-<!--   } -->
+  }
 
-<!--     ggplot(df, aes(x = time, y = ml.value, color = cond)) +  -->
-<!--       facet_wrap(~dv, scales = "free") +  -->
+    ggplot(df, aes(x = time, y = ml.value, color = cond)) +
+      facet_wrap(~dv, scales = "free") +
 
-<!--       geom_line(position = position_jitterdodge(dodge.width = 0.2, jitter.width = 0, jitter.height = 0)) +  -->
-<!--       geom_point(position = position_jitterdodge(dodge.width = 0.2, jitter.width = 0, jitter.height = 0)) +  -->
+      geom_line(position = position_jitterdodge(dodge.width = 0.2, jitter.width = 0, jitter.height = 0)) +
+      geom_point(position = position_jitterdodge(dodge.width = 0.2, jitter.width = 0, jitter.height = 0)) +
 
-<!--       geom_errorbar(aes(ymin = df$`2.5 %`, ymax = df$`97.5 %`), position = "dodge2", width = 0.2) +  -->
-<!--       ggthemes::theme_tufte() +  -->
-<!--       scale_x_discrete() +  -->
-<!--       xlim(c("before", "after")) -->
-<!--     } -->
-<!-- } -->
+      geom_errorbar(aes(ymin = df$`2.5 %`, ymax = df$`97.5 %`), position = "dodge2", width = 0.2) +
+      ggthemes::theme_tufte() +
+      scale_x_discrete() +
+      xlim(c("before", "after"))
+    }
+}
 
-<!-- ci.plot.vr <- ci.plot("vr") -->
-<!-- ci.plot.condition <- ci.plot("condition") -->
+ci.plot.vr <- ci.plot("vr")
+ci.plot.condition <- ci.plot("condition")
 
-<!-- #ci.plot.condition(vr.res.md.comp.mean) -->
-<!-- #ci.plot.vr(vr.nonvr.mean) -->
+#ci.plot.condition(vr.res.md.comp.mean)
+#ci.plot.vr(vr.nonvr.mean)
 
-<!-- ``` -->
+```
 
 
 <!-- ## Example DV -->
@@ -970,99 +984,101 @@ make.x.table(vr.models)
 <!-- sds <- as.data.frame(sds, row.names = c("t1", "t2"), col.names = c("a", "b", "c", "text", "text.bild", "video")) -->
 <!-- ``` -->
 
-<!-- ```{r} -->
-<!-- md <- best.cond.onlyvr$IAT -->
-<!-- levels(as.factor(data$condition)) -->
+```{r, eval = FALSE, include= FALSE}
+md <- best.cond.onlyvr$IAT
+levels(as.factor(data$condition))
 
-<!-- df.predicted <- data.frame( -->
-<!--   id = rep(as.factor(1:6), each = 2), -->
-<!--   time = rep(1:2, times = 6), -->
-<!--   condition = rep(levels(as.factor(data$condition)), each = 2), -->
-<!--   vr = rep(c(T, F), each = 6) -->
-<!-- ) -->
-
-
-<!-- #predict_merMod(md, newdata =  data.pred[data.pred$vr,], allow.new.levels = T, boot = T) -->
-<!-- #df.predicted <- data.frame(person = NA, x = obs.points) -->
+df.predicted <- data.frame(
+  id = rep(as.factor(1:6), each = 2),
+  time = rep(1:2, times = 6),
+  condition = rep(levels(as.factor(data$condition)), each = 2),
+  vr = rep(c(T, F), each = 6)
+)
 
 
-<!-- predict.fun <- function(my.lmm) { -->
-<!--   predict(my.lmm, newdata = df.predicted[df.predicted$vr,], re.form = NA)   # This is predict.merMod  -->
-<!-- } -->
-
-<!-- df.predicted$ml.value <- predict.fun(md) -->
-
-<!-- # Make predictions in 100 bootstraps of the LMM. Use these to get confidence -->
-<!-- # intervals. -->
-<!-- lmm.boots <- bootMer(md, predict.fun, nsim = 100, parallel = "multicore", ncpus = (detectCores(all.tests = FALSE, logical = TRUE)-1)) -->
-<!-- df.pred <- cbind(df.predicted, confint(lmm.boots)) -->
-
-<!-- #df.pred -->
+#predict_merMod(md, newdata =  data.pred[data.pred$vr,], allow.new.levels = T, boot = T)
+#df.predicted <- data.frame(person = NA, x = obs.points)
 
 
+predict.fun <- function(my.lmm) {
+  predict(my.lmm, newdata = df.predicted[df.predicted$vr,], re.form = NA)   # This is predict.merMod
+}
 
-<!-- cbind(confint(md, parm = 3:(length(fixef(md))+2)), fixef(md)) -->
-<!-- ``` -->
+df.predicted$ml.value <- predict.fun(md)
 
-<!-- ```{r cond mean function} -->
-<!-- cond.mean.ci <- function(data.temp){ -->
-<!--   predict.fun <- function(my.lmm) { -->
-<!--    # my.lmm <- md -->
-<!--   #data.temp <- df.predicted.vr -->
-<!--     predict(my.lmm, newdata = data.temp, re.form = NA)   # This is predict.merMod  -->
-<!--     #data.temp$x <- x -->
-<!--     #data.temp$y <- rep(x[data.temp$time==1]-x[data.temp$time==2], each = 2) -->
-<!--     #y <- x -->
-<!--   } -->
+# Make predictions in 100 bootstraps of the LMM. Use these to get confidence
+# intervals.
+lmm.boots <- bootMer(md, predict.fun, nsim = 100, parallel = "multicore", ncpus = (detectCores(all.tests = FALSE, logical = TRUE)-1))
+df.pred <- cbind(df.predicted, confint(lmm.boots))
 
-<!--   function(md){ -->
-<!--     data.temp$ml.value <- predict.fun(md) -->
-<!--     # Make predictions in 100 bootstraps of the LMM. Use these to get confidence -->
-<!--     # intervals. -->
-<!--     dv <- as.character(formula(md))[2] -->
-<!--     lmm.boots <- bootMer(md, predict.fun, nsim = 1000,  -->
-<!--                          #parallel = "multicore",  -->
-<!--                          ncpus = (detectCores(all.tests = FALSE, logical = TRUE)-1),  -->
-<!--                          type = "semiparametric",  -->
-<!--                          use.u = T) -->
+#df.pred
 
 
-<!--     data.temp <- cbind("dv" = dv, data.temp, confint(lmm.boots)) -->
-<!--     return(data.temp) -->
-<!--   } -->
-<!-- } -->
-<!-- ``` -->
 
-<!-- ```{r} -->
-<!-- df.predicted.all <- data.frame( -->
-<!--   id = rep(as.factor(1:6), each = 2), -->
-<!--   time = rep(1:2, times = 6), -->
-<!--   condition = rep(levels(as.factor(data$condition)), each = 2), -->
-<!--   vr = rep(c(T, F), each = 6) -->
-<!-- ) -->
+cbind(confint(md, parm = 3:(length(fixef(md))+2)), fixef(md))
+```
 
-<!-- df.predicted.vr <- df.predicted.all %>% filter(vr) -->
+```{r cond mean function}
+cond.mean.ci <- function(data.temp){
+  predict.fun <- function(my.lmm) {
+   # my.lmm <- md
+  #data.temp <- df.predicted.vr
+    predict(my.lmm, newdata = data.temp, re.form = NA)   # This is predict.merMod
+    #data.temp$x <- x
+    #data.temp$y <- rep(x[data.temp$time==1]-x[data.temp$time==2], each = 2)
+    #y <- x
+  }
 
-<!-- cond.mean.ci.all <- cond.mean.ci(data = df.predicted.all) -->
-<!-- cond.mean.ci.vr <- cond.mean.ci(data = df.predicted.vr) -->
-<!-- ``` -->
-<!-- # First for only VR: -->
-<!-- ## For Best Fitting Models -->
-<!-- ```{r} -->
-<!-- # where is the  -->
+  function(md){
+    data.temp$ml.value <- predict.fun(md)
+    # Make predictions in 100 bootstraps of the LMM. Use these to get confidence
+    # intervals.
+    dv <- as.character(formula(md))[2]
+    lmm.boots <- bootMer(md, predict.fun, nsim = 1000,
+                         #parallel = "multicore",
+                         ncpus = (detectCores(all.tests = FALSE, logical = TRUE)-1),
+                         type = "semiparametric",
+                         use.u = T)
 
-<!-- #cond.mean.ci.all # all  -->
-<!-- #best.cond -->
-<!-- #best.models -->
-<!-- #res.only.vr -->
 
-<!-- onlyvr.cond.mean.list <- lapply(best.cond.onlyvr, cond.mean.ci.vr) -->
-<!-- onlyvr.cond.mean <- do.call("rbind", onlyvr.cond.mean.list) -->
-<!-- ``` -->
+    data.temp <- cbind("dv" = dv, data.temp, confint(lmm.boots))
+    return(data.temp)
+  }
+}
+```
 
-<!-- ```{r} -->
-<!-- ci.plot.condition(onlyvr.cond.mean) -->
-<!-- ``` -->
+```{r}
+df.predicted.all <- data.frame(
+  id = rep(as.factor(1:6), each = 2),
+  time = rep(1:2, times = 6),
+  condition = rep(levels(as.factor(data$condition)), each = 2),
+  vr = rep(c(T, F), each = 6)
+)
+
+df.predicted.vr <- df.predicted.all %>% filter(vr)
+
+cond.mean.ci.all <- cond.mean.ci(data = df.predicted.all)
+cond.mean.ci.vr <- cond.mean.ci(data = df.predicted.vr)
+```
+
+First for only VR:
+
+ For Best Fitting Models
+```{r}
+# where is the
+
+#cond.mean.ci.all # all
+#best.cond
+#best.models
+#res.only.vr
+
+onlyvr.cond.mean.list <- lapply(vr.models[1:4], cond.mean.ci.vr)
+onlyvr.cond.mean <- do.call("rbind", onlyvr.cond.mean.list)
+```
+
+```{r}
+(cond.ci.plot <- ci.plot.condition(onlyvr.cond.mean))
+```
 
 
 <!-- ## For most complex Models -->
@@ -1084,48 +1100,42 @@ make.x.table(vr.models)
 <!-- ``` -->
 
 <!-- ## All models together -->
-<!-- ```{r} -->
-<!-- vr.nonvr.models <- get.comp(vr.vs.nonvr.res, "fit") -->
-<!-- vr.nonvr.models.comp <- list(vr.nonvr.models[[1]][[4]], vr.nonvr.models[[2]][[4]], vr.nonvr.models[[3]][[4]], vr.nonvr.models[[4]][[3]]) -->
-<!-- # Bootstrap CI's -->
-<!-- vr.nonvr.mean.list <- lapply(vr.nonvr.models.comp, cond.mean.ci.all) -->
-<!-- vr.nonvr.mean <- do.call("rbind", vr.nonvr.mean.list) -->
-<!-- ``` -->
+```{r}
+# Bootstrap CI's
+vr.nonvr.mean.list <- lapply(all.models[1:4], cond.mean.ci.all)
+vr.nonvr.mean <- do.call("rbind", vr.nonvr.mean.list)
+```
 
-<!-- ```{r} -->
+<!-- ```{r, include = FALSE} -->
 <!-- vr.nonvr.mean.table <- vr.nonvr.mean %>% filter(vr.nonvr.mean$condition %in% c("a", "text")) %>% -->
-<!--   dplyr::select(!c(id, condition)) %>%  -->
-<!--   group_by(dv, vr) %>%  -->
+<!--   dplyr::select(!c(id, condition)) %>% -->
+<!--   group_by(dv, vr) %>% -->
 <!--   mutate(diff = ml.value[time == 2]-ml.value[time==1]) %>% -->
-<!--   ungroup %>%  -->
-<!--   group_by(dv, time) %>%  -->
+<!--   ungroup %>% -->
+<!--   group_by(dv, time) %>% -->
 <!--   mutate(diffdiff = diff[vr == F]-diff[vr==T]) -->
 
 <!-- vr.nonvr.mean.table[,4:7] <- round(vr.nonvr.mean.table[,4:7], 3) -->
 <!-- vr.nonvr.mean.table -->
 <!-- ``` -->
-<!-- Confidence interval for difference measure:  -->
-<!-- ```{r} -->
-<!-- confint(best.vr$IAT) -->
-<!-- ``` -->
 
 
-<!-- ```{r} -->
-<!-- vr.ci.plot <- ci.plot.vr(vr.nonvr.mean) + -->
-<!--   guides(color=guide_legend(title="VR")) -->
-<!-- ``` -->
-<!-- save plots -->
-<!-- ```{r} -->
-<!-- tikz(file = "../tex/plots/vr_ci_plot.tex", width = 7, height = 5) -->
-<!-- vr.ci.plot -->
-<!-- dev.off() -->
-<!-- ``` -->
-<!-- # temp delete after ölkaj  -->
-<!-- ```{r} -->
-<!-- lapply(best.cond.onlyvr, confint) -->
-<!-- get.comp(cond.models) -->
-<!-- ``` -->
+```{r}
+(vr.ci.plot <- ci.plot.vr(vr.nonvr.mean) +
+  guides(color=guide_legend(title="VR")))
+```
+save plots
+```{r}
+pdf(file = "analysisOutputs/plots/vr_ci_plot.pdf", width = 7, height = 5)
+vr.ci.plot
+dev.off()
+```
 
+```{r}
+pdf(file = "analysisOutputs/plots/cond_ci_plot.pdf", width = 7, height = 5)
+cond.ci.plot
+dev.off()
+```
 <!-- ```{r} -->
 <!-- confint(vr.vs.nonvr.res[[3]]$fits$`nr ~ time + vr + time:vr + (1 | id) + (1 | condition)`) -->
 <!-- ``` -->
@@ -1152,79 +1162,147 @@ make.x.table(vr.models)
 <!-- ``` -->
 
 
-<!-- # Check Intervention -->
+# Check Intervention
 
-<!-- This section is concerned only with the VR conditions a, b, c.  -->
-<!-- Specifically with the variables vr_eval 1:5 and with the sod and presence scale IPQ. -->
+This section is concerned only with the VR conditions a, b, c.
+Specifically with the variables vr_eval 1:5 and with the sod and presence scale IPQ.
 
-<!-- Check for outliers on these scales: -->
+Check for outliers on these scales:
+```{r}
+#check.data <- data %>% dplyr::filter((vr == T & time == 1 ) & !is.na(ipq))
+check.data <- data %>% dplyr::filter((time == 1 ) & !is.na(ipq))
+
+#outlier.data <- data %>% ungroup() %>% dplyr::filter(vr == T & time == 1) %>% dplyr::select(starts_with("vr_eval"), sod, ipq) %>%
+# drop_na()
+#mvoutlier::chisq.plot(check.data %>% ungroup() %>% dplyr::select(starts_with("vr_eval"), sod, ipq))
+# remove: 38  1 63
+# which corresponds to the ids:
+#remove.ids <- check.data$id[c(38,  1, 63)]
+# "44466757" "32504483" "80688810"
+```
+
+```{r, include = FALSE}
+pacman::p_load(gtable, cowplot)
+
+shift_legend <- function(p){
+
+  # check if p is a valid object
+  if(!"gtable" %in% class(p)){
+    if("ggplot" %in% class(p)){
+      gp <- ggplotGrob(p) # convert to grob
+    } else {
+      message("This is neither a ggplot object nor a grob generated from ggplotGrob. Returning original plot.")
+      return(p)
+    }
+  } else {
+    gp <- p
+  }
+
+  # check for unfilled facet panels
+  facet.panels <- grep("^panel", gp[["layout"]][["name"]])
+  empty.facet.panels <- sapply(facet.panels, function(i) "zeroGrob" %in% class(gp[["grobs"]][[i]]))
+  empty.facet.panels <- facet.panels[empty.facet.panels]
+  if(length(empty.facet.panels) == 0){
+    message("There are no unfilled facet panels to shift legend into. Returning original plot.")
+    return(p)
+  }
+
+  # establish extent of unfilled facet panels (including any axis cells in between)
+  empty.facet.panels <- gp[["layout"]][empty.facet.panels, ]
+  empty.facet.panels <- list(min(empty.facet.panels[["t"]]), min(empty.facet.panels[["l"]]),
+                             max(empty.facet.panels[["b"]]), max(empty.facet.panels[["r"]]))
+  names(empty.facet.panels) <- c("t", "l", "b", "r")
+
+  # extract legend & copy over to location of unfilled facet panels
+  guide.grob <- which(gp[["layout"]][["name"]] == "guide-box")
+  if(length(guide.grob) == 0){
+    message("There is no legend present. Returning original plot.")
+    return(p)
+  }
+  gp <- gtable_add_grob(x = gp,
+                        grobs = gp[["grobs"]][[guide.grob]],
+                        t = empty.facet.panels[["t"]],
+                        l = empty.facet.panels[["l"]],
+                        b = empty.facet.panels[["b"]],
+                        r = empty.facet.panels[["r"]],
+                        name = "new-guide-box")
+
+  # squash the original guide box's row / column (whichever applicable)
+  # & empty its cell
+  guide.grob <- gp[["layout"]][guide.grob, ]
+  if(guide.grob[["l"]] == guide.grob[["r"]]){
+    gp <- gtable_squash_cols(gp, cols = guide.grob[["l"]])
+  }
+  if(guide.grob[["t"]] == guide.grob[["b"]]){
+    gp <- gtable_squash_rows(gp, rows = guide.grob[["t"]])
+  }
+  gp <- gtable_remove_grobs(gp, "guide-box")
+
+  return(gp)
+}
+```
+
+```{r}
+vars <-c("vr_eval1", "vr_eval2", "vr_eval3", "vr_eval4", "vr_eval5", "ipq", "sod")
+
+desc_plot_data <- gather(data, specific, value, vars) %>%
+ # filter(!is.na(ipq)) %>%
+  arrange(id, specific) %>%
+  mutate(specific = ifelse(specific=="vr_eval1", "excitement",
+                        ifelse(specific=="vr_eval2", "graphically pleasing",
+                               ifelse(specific=="vr_eval3", "pleasant",
+                                      ifelse(specific=="vr_eval4", "realistic", 
+                                             ifelse(specific=="vr_eval5", "enjoyment", specific))))),
+         VRE = ifelse(condition == "b", "R+",
+                      ifelse(condition=="c", "R-",
+                             ifelse(condition=="a", "A+", condition)))) %>%
+  dplyr::select(specific, value, id, VRE)
+
+
+(vr_eval_plot <- ggplot(data = desc_plot_data, aes(x = VRE, y = value, color = VRE)) +
+  facet_wrap( ~specific, nrow = 2)+
+  geom_violin(draw_quantiles = .5) + #, position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0, jitter.height = 0))+
+  geom_point(alpha = .3, position = "jitter")+#, position = position_jitterdodge(dodge.width = 0, jitter.width = .2, jitter.height = .3)) +
+  ggthemes::theme_tufte() +
+  ylab("value") +
+  xlab("question")+
+  #labs(title="Evaluation of Virtual Environments")+
+  scale_y_continuous(breaks = c(1,3,5,7)) +
+  theme(legend.position = "bottom") )
+
+
+
+ipq_sod_plot_data <- gather(data, scale, value, c("ipq", "sod")) %>%
+  filter(time==1, condition %in% c("a", "b", "c", "video")) %>%
+  arrange(id, scale) %>%
+  mutate(VRE = ifelse(condition == "b", "R+",
+                      ifelse(condition=="c", "R-", 
+                             ifelse(condition == "a", "A+", condition)))) %>%
+  dplyr::select(scale, value, id, VRE)
+
+
+ipq_sod_plot <- ggplot(data = ipq_sod_plot_data, aes(x = VRE, y = value, color = VRE)) +
+  facet_wrap(~scale, ncol = 2)+
+  geom_violin(draw_quantiles = .5, position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0, jitter.height = 0))+
+  geom_point(alpha = .3, position = position_jitterdodge(dodge.width = 0.8, jitter.width = .2, jitter.height = .1)) +
+  ggthemes::theme_tufte() +
+  ylab("scores") +
+  xlab("scale")+
+  #labs(title="Presence (IPQ) and Suspension of Disbelief (SOD)")+
+  scale_y_continuous(breaks = c(1,3,5,7), limits = c(1,7)); ipq_sod_plot
+
+```
+
+
+
+
 <!-- ```{r} -->
-<!-- check.data <- data %>% dplyr::filter((vr == T & time == 1 ) & !is.na(ipq)) -->
-
-
-<!-- #outlier.data <- data %>% ungroup() %>% dplyr::filter(vr == T & time == 1) %>% dplyr::select(starts_with("vr_eval"), sod, ipq) %>%  -->
-<!-- # drop_na() -->
-<!-- #mvoutlier::chisq.plot(check.data %>% ungroup() %>% dplyr::select(starts_with("vr_eval"), sod, ipq)) -->
-<!-- # remove: 38  1 63 -->
-<!-- # which corresponds to the ids:  -->
-<!-- remove.ids <- check.data$id[c(38,  1, 63)] -->
-<!-- # "44466757" "32504483" "80688810" -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-
 <!-- desc_plot_data <- gather(data, specific, value, vr_eval1:vr_eval5) %>% -->
-<!--   filter(time==1, vr == TRUE, !id %in% remove.ids) %>% -->
+<!--   filter(time==1) %>% -->
 <!--   arrange(id, specific) %>% -->
-<!--   mutate(specific = ifelse(specific=="vr_eval1", "excitement",  -->
-<!--                         ifelse(specific=="vr_eval2", "graphically pleasing",  -->
-<!--                                ifelse(specific=="vr_eval3", "pleasant",  -->
-<!--                                       ifelse(specific=="vr_eval4", "realistic", "enjoyment")))), -->
-<!--          VRE = ifelse(condition == "b", "R+", -->
-<!--                       ifelse(condition=="c", "R-", "A+"))) %>% -->
-<!--   dplyr::select(specific, value, id, VRE) -->
-
-
-<!-- vr_eval_plot <- ggplot(data = desc_plot_data, aes(x = specific, y = value, color = VRE)) +  -->
-<!--   geom_violin(draw_quantiles = .5, position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0, jitter.height = 0))+ -->
-<!--   geom_point(alpha = .3, position = position_jitterdodge(dodge.width = 0.8, jitter.width = .2, jitter.height = .3)) + -->
-<!--   ggthemes::theme_tufte() + -->
-<!--   ylab("value") + -->
-<!--   xlab("question")+ -->
-<!--   #labs(title="Evaluation of Virtual Environments")+ -->
-<!--   scale_y_continuous(breaks = c(1,3,5,7)) + -->
-<!--   theme(legend.position = "bottom"); vr_eval_plot -->
-
-<!-- ipq_sod_plot_data <- gather(data, scale, value, c("ipq", "sod")) %>% -->
-<!--   filter(time==1,  vr == TRUE, !id %in% remove.ids) %>% -->
-<!--   arrange(id, scale) %>% -->
-<!--   mutate(VRE = ifelse(condition == "b", "R+", -->
-<!--                       ifelse(condition=="c", "R-", "A+"))) %>% -->
-<!--   dplyr::select(scale, value, id, VRE) -->
-
-
-<!-- ipq_sod_plot <- ggplot(data = ipq_sod_plot_data, aes(x = scale, y = value, color = VRE)) +  -->
-<!--   geom_violin(draw_quantiles = .5, position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0, jitter.height = 0))+ -->
-<!--   geom_point(alpha = .3, position = position_jitterdodge(dodge.width = 0.8, jitter.width = .2, jitter.height = .1)) + -->
-<!--   ggthemes::theme_tufte() + -->
-<!--   ylab("scores") + -->
-<!--   xlab("scale")+ -->
-<!--   #labs(title="Presence (IPQ) and Suspension of Disbelief (SOD)")+ -->
-<!--   scale_y_continuous(breaks = c(1,3,5,7), limits = c(1,7)); ipq_sod_plot -->
-
-<!-- ``` -->
-
-
-
-
-
-<!-- ```{r} -->
-<!-- desc_plot_data <- gather(data, specific, value, vr_eval1:vr_eval5) %>% -->
-<!--   filter(time==1, !id %in% remove.ids) %>% -->
-<!--   arrange(id, specific) %>% -->
-<!--   mutate(specific = ifelse(specific=="vr_eval1", "excitement",  -->
-<!--                         ifelse(specific=="vr_eval2", "graphically pleasing",  -->
-<!--                                ifelse(specific=="vr_eval3", "pleasant",  -->
+<!--   mutate(specific = ifelse(specific=="vr_eval1", "excitement", -->
+<!--                         ifelse(specific=="vr_eval2", "graphically pleasing", -->
+<!--                                ifelse(specific=="vr_eval3", "pleasant", -->
 <!--                                       ifelse(specific=="vr_eval4", "realistic", "enjoyment")))), -->
 <!--          VRE = ifelse(condition == "b", "R+", -->
 <!--                       ifelse(condition=="c", "R-", condition))) %>% -->
@@ -1232,7 +1310,7 @@ make.x.table(vr.models)
 <!--   ungroup() -->
 
 
-<!-- vr_eval_plot_all <- ggplot(data = desc_plot_data, aes(x = specific, y = value, color = VRE, fill = vr)) +  -->
+<!-- vr_eval_plot_all <- ggplot(data = desc_plot_data, aes(x = specific, y = value, color = VRE, fill = vr)) + -->
 <!--   geom_violin(draw_quantiles = .5, position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0, jitter.height = 0))+ -->
 <!--   geom_point(alpha = .3, position = position_jitterdodge(dodge.width = 0.8, jitter.width = .2, jitter.height = .3)) + -->
 <!--   ggthemes::theme_tufte() + -->
@@ -1246,12 +1324,12 @@ make.x.table(vr.models)
 <!--   filter(time==1,  !id %in% remove.ids, !condition %in% c("text", "text.bild")) %>% -->
 <!--   arrange(id, scale) %>% -->
 <!--   mutate(VRE = ifelse(condition == "b", "R+", -->
-<!--                       ifelse(condition=="c", "R-",  -->
+<!--                       ifelse(condition=="c", "R-", -->
 <!--                              ifelse(condition == "a", "A+", condition)))) %>% -->
 <!--   dplyr::select(scale, value, id, VRE) -->
 
 
-<!-- ipq_sod_plot_all <- ggplot(data = ipq_sod_plot_data, aes(x = scale, y = value, color = VRE)) +  -->
+<!-- ipq_sod_plot_all <- ggplot(data = ipq_sod_plot_data, aes(x = scale, y = value, color = VRE)) + -->
 <!--   geom_violin(draw_quantiles = .5, position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0, jitter.height = 0))+ -->
 <!--   geom_point(alpha = .3, position = position_jitterdodge(dodge.width = 0.8, jitter.width = .2, jitter.height = .1)) + -->
 <!--   ggthemes::theme_tufte() + -->
@@ -1260,12 +1338,13 @@ make.x.table(vr.models)
 <!--   #labs(title="Presence (IPQ) and Suspension of Disbelief (SOD)")+ -->
 <!--   scale_y_continuous(breaks = c(1,3,5,7), limits = c(1,7)); ipq_sod_plot_all -->
 <!-- ``` -->
-<!-- ```{r} -->
-<!-- # save the plots -->
-<!-- tikz(file = "../tex/plots/vr_eval_all.tex", width = 7, height = 5) -->
-<!-- vr_eval_plot_all -->
-<!-- dev.off() -->
+```{r}
+# save the plots
+tikz(file = "analysisOutputs/plots/check.tex", width = 7, height = 5)
+grid::grid.draw(shift_legend(vr_eval_plot))
 
+dev.off()
+```
 <!-- tikz(file = "../tex/plots/ipqsod_all.tex", width = 7, height = 5) -->
 <!-- ipq_sod_plot_all -->
 <!-- dev.off() -->
