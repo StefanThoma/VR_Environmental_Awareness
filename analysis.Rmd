@@ -3,8 +3,9 @@ title: "Analysis"
 author: "Stefan P. Thoma"
 date: "3/10/2020"
 output:
-  html_document: default
+  rmarkdown::github_document: default
   pdf_document: default
+  html_document: default
 ---
 
 # Setup
