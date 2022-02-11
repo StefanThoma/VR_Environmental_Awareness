@@ -209,7 +209,7 @@ ipq_sod_plot <- ggplot(data = ipq_sod_plot_data, aes(x = VRE, y = value, color =
 
     ## Warning: Removed 4 rows containing non-finite values (stat_ydensity).
 
-    ## Warning: Removed 7 rows containing missing values (geom_point).
+    ## Warning: Removed 5 rows containing missing values (geom_point).
 
 ![](analysis_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->
 
@@ -307,34 +307,34 @@ vr.models <- lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors.vr
 ```
 
     ## iat ~ condition * time + (time | id)
-    ## <environment: 0x7fa13881fd88>
+    ## <environment: 0x7faf8f2a77e0>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## iat ~ condition * time + (1 | id)
-    ## <environment: 0x7fa13ceba6e0>
+    ## <environment: 0x7faf9e85d938>
     ## [1] "is model singular:  FALSE"
     ## ccs ~ condition * time + (time | id)
-    ## <environment: 0x7fa13ab97c38>
+    ## <environment: 0x7fafaa5e1b70>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## ccs ~ condition * time + (1 | id)
-    ## <environment: 0x7fa1396af908>
+    ## <environment: 0x7fafa8f18320>
     ## [1] "is model singular:  FALSE"
     ## nr ~ condition * time + (time | id)
-    ## <environment: 0x7fa1885005f8>
+    ## <environment: 0x7faffa443a70>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## nr ~ condition * time + (1 | id)
-    ## <environment: 0x7fa1881ad188>
+    ## <environment: 0x7faffe1e7900>
     ## [1] "is model singular:  FALSE"
     ## nep ~ condition * time + (time | id)
-    ## <environment: 0x7fa17e60beb8>
+    ## <environment: 0x7faffbaeabe0>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## nep ~ condition * time + (1 | id)
-    ## <environment: 0x7fa17b365700>
+    ## <environment: 0x7faffb863970>
     ## [1] "is model singular:  FALSE"
     ## env_pc ~ condition * time + (time | id)
-    ## <environment: 0x7fa17e023548>
+    ## <environment: 0x7faff95dbe60>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## env_pc ~ condition * time + (1 | id)
-    ## <environment: 0x7fa17afb8dd8>
+    ## <environment: 0x7faff92b2cf8>
     ## [1] "is model singular:  FALSE"
 
 ``` r
@@ -342,54 +342,54 @@ all.models  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors
 ```
 
     ## iat ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7fa17aab96d0>
+    ## <environment: 0x7fafe87893c8>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## iat ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa16d2f3668>
+    ## <environment: 0x7fafe9582f10>
     ## [1] "is model singular:  FALSE"
     ## ccs ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7fa139a4a8e8>
+    ## <environment: 0x7faf8eba2f98>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## ccs ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa17f70fd00>
+    ## <environment: 0x7faf8dea09b0>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## ccs ~ vr * time + (1 | id)
-    ## <environment: 0x7fa12f643c80>
+    ## <environment: 0x7faf8c98c130>
     ## [1] "is model singular:  FALSE"
     ## nr ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7fa13b02e248>
+    ## <environment: 0x7faf8d6d69e8>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## nr ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa12c655be8>
+    ## <environment: 0x7fafa92a3b88>
     ## [1] "is model singular:  FALSE"
     ## nep ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7fa12f98eef0>
+    ## <environment: 0x7fafa91df1a0>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## nep ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa18a71a960>
+    ## <environment: 0x7fb00969b010>
     ## [1] "is model singular:  FALSE"
     ## env_pc ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7fa12e5faea8>
+    ## <environment: 0x7fafa9c53158>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## env_pc ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa1380573c0>
+    ## <environment: 0x7fb008dcf070>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## env_pc ~ vr * time + (1 | id)
-    ## <environment: 0x7fa13ae455e0>
+    ## <environment: 0x7faf8edb13c8>
     ## [1] "is model singular:  FALSE"
 
 ## Model diagnostics
@@ -400,10 +400,10 @@ I save model diagnostics as pdfs separately, for visibility reasons.
 plot_diagn <- function(model){
   
   filename <- paste( model@call$formula[2], sub("\\ .*", "", model@call$formula[3]), sep = "_")
-  pdf(file = paste("analysisOutputs/diagnostics/", filename, ".pdf", sep = ""),   # The directory you want to save the file in
-    #paper = "a3", 
-    height = 5.9*4, 
-    width = 4.2*4
+  png(filename = paste("analysisOutputs/diagnostics/", filename, ".png", sep = ""),   # The directory you want to save the file in
+    #paper = "a3",
+    height = 5900/4,
+    width = 4200/4
     )
 
   print(performance::check_model(model)  )
@@ -468,7 +468,7 @@ transformation of the dv in my opinion.
 
 <div class="figure" style="text-align: center">
 
-<img src="analysisOutputs/diagnostics/iat_vr.pdf" alt="iat_vr_diagnostics"  />
+<img src="analysisOutputs/diagnostics/iat_vr.png" alt="iat_vr_diagnostics" width="1050" />
 <p class="caption">
 iat\_vr\_diagnostics
 </p>
@@ -482,7 +482,7 @@ Homogeneity of variance seems acceptable. Random effects appear normal.
 
 <div class="figure" style="text-align: center">
 
-<img src="analysisOutputs/diagnostics/ccs_vr.pdf" alt="ccs_vr_diagnostics"  />
+<img src="analysisOutputs/diagnostics/ccs_vr.png" alt="ccs_vr_diagnostics" width="1050" />
 <p class="caption">
 ccs\_vr\_diagnostics
 </p>
@@ -522,17 +522,17 @@ all.ccs2 <- fit_many(pred.vector = predictors.all, dat = data, dv = "ccs_bc")
 ```
 
     ## ccs_bc ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7fa13db968d8>
+    ## <environment: 0x7fafa9b1bb00>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## ccs_bc ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa138009200>
+    ## <environment: 0x7fb008177510>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## ccs_bc ~ vr * time + (1 | id)
-    ## <environment: 0x7fa13d112c38>
+    ## <environment: 0x7faffa5ab0b8>
     ## [1] "is model singular:  FALSE"
 
 ``` r
@@ -551,7 +551,7 @@ For within the VE:
 
 <div class="figure" style="text-align: center">
 
-<img src="analysisOutputs/diagnostics/ccs_condition.pdf" alt="ccs_condition_diagnostics"  />
+<img src="analysisOutputs/diagnostics/ccs_condition.png" alt="ccs_condition_diagnostics" width="1050" />
 <p class="caption">
 ccs\_condition\_diagnostics
 </p>
@@ -568,10 +568,10 @@ vr.ccs2 <- fit_many(pred.vector = predictors.vr, dat = data.vr, dv = "ccs_bc")
 ```
 
     ## ccs_bc ~ condition * time + (time | id)
-    ## <environment: 0x7fa1392e6e08>
+    ## <environment: 0x7faffa473568>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## ccs_bc ~ condition * time + (1 | id)
-    ## <environment: 0x7fa12e42eac8>
+    ## <environment: 0x7faffe16eb20>
     ## [1] "is model singular:  FALSE"
 
 ``` r
@@ -588,7 +588,7 @@ vr.models[[2]] <- vr.ccs2
 
 <div class="figure" style="text-align: center">
 
-<img src="analysisOutputs/diagnostics/iat_vr.pdf" alt="nr_vr_diagnostics"  />
+<img src="analysisOutputs/diagnostics/iat_vr.png" alt="nr_vr_diagnostics" width="1050" />
 <p class="caption">
 nr\_vr\_diagnostics
 </p>
@@ -606,7 +606,7 @@ Overall assumptions seem acceptable and warrant no further action.
 
 <div class="figure" style="text-align: center">
 
-<img src="analysisOutputs/diagnostics/nep_vr.pdf" alt="nep_vr_diagnostics"  />
+<img src="analysisOutputs/diagnostics/nep_vr.png" alt="nep_vr_diagnostics" width="1050" />
 <p class="caption">
 nep\_vr\_diagnostics
 </p>
@@ -623,7 +623,7 @@ Overall assumptions seem acceptable and warrant no further action.
 
 <div class="figure" style="text-align: center">
 
-<img src="analysisOutputs/diagnostics/env_pc_vr.pdf" alt="env_pc_vr_diagnostics"  />
+<img src="analysisOutputs/diagnostics/env_pc_vr.png" alt="env_pc_vr_diagnostics" width="1050" />
 <p class="caption">
 env\_pc\_vr\_diagnostics
 </p>
@@ -658,17 +658,17 @@ all.env_pc2 <- fit_many(pred.vector = predictors.all, dat = data, dv = "env_pc_b
 ```
 
     ## env_pc_bc ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7fa13dd5c8d8>
+    ## <environment: 0x7fb00926fd20>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## env_pc_bc ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa14b41cce0>
+    ## <environment: 0x7faf9969f0e8>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## env_pc_bc ~ vr * time + (1 | id)
-    ## <environment: 0x7fa14af74c18>
+    ## <environment: 0x7fafa8282028>
     ## [1] "is model singular:  FALSE"
 
 ``` r
@@ -1581,7 +1581,7 @@ make.x.table(all.models, save = FALSE)
     ## Computing profile confidence intervals ...
 
     ## % latex table generated in R 4.1.2 by xtable 1.8-4 package
-    ## % Sat Feb 12 00:03:15 2022
+    ## % Sat Feb 12 00:32:14 2022
     ## \begin{table}[ht]
     ## \centering
     ## \begin{tabular}{llrlr}
@@ -1629,7 +1629,7 @@ make.x.table(vr.models, save = FALSE)
     ## Computing profile confidence intervals ...
 
     ## % latex table generated in R 4.1.2 by xtable 1.8-4 package
-    ## % Sat Feb 12 00:03:19 2022
+    ## % Sat Feb 12 00:32:18 2022
     ## \begin{table}[ht]
     ## \centering
     ## \begin{tabular}{llrlr}

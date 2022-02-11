@@ -3,9 +3,9 @@ title: "Analysis"
 author: "Stefan P. Thoma"
 date: "3/10/2020"
 output:
-  rmarkdown::github_document: default
-  pdf_document: default
   html_document: default
+  pdf_document: default
+  rmarkdown::github_document: default
 ---
 
 # Setup
@@ -367,10 +367,10 @@ I save model diagnostics as pdfs separately, for visibility reasons.
 plot_diagn <- function(model){
   
   filename <- paste( model@call$formula[2], sub("\\ .*", "", model@call$formula[3]), sep = "_")
-  pdf(file = paste("analysisOutputs/diagnostics/", filename, ".pdf", sep = ""),   # The directory you want to save the file in
-    #paper = "a3", 
-    height = 5.9*4, 
-    width = 4.2*4
+  png(filename = paste("analysisOutputs/diagnostics/", filename, ".png", sep = ""),   # The directory you want to save the file in
+    #paper = "a3",
+    height = 5900/4,
+    width = 4200/4
     )
 
   print(performance::check_model(model)  )
@@ -395,8 +395,8 @@ However, this does not yet warrant a transformation of the dv in my opinion.
 
 
 ### IAT
-```{r, include=TRUE, fig.align="center", fig.cap=c("iat_vr_diagnostics"), echo=FALSE}
-knitr::include_graphics("analysisOutputs/diagnostics/iat_vr.pdf")
+```{r, include=TRUE, fig.align="center", fig.cap=c("iat_vr_diagnostics"), echo=FALSE, fig.height=5.9*4,fig.width=4.2*4}
+knitr::include_graphics("analysisOutputs/diagnostics/iat_vr.png")
 ```
 Some thoughts: 
 Band of residuals increases as fitted values increase. 
@@ -404,8 +404,8 @@ Homogeneity of variance seems acceptable.
 Random effects appear normal. 
 
 ### CCS
-```{r, include=TRUE, fig.align="center", fig.cap=c("ccs_vr_diagnostics"), echo=FALSE}
-knitr::include_graphics("analysisOutputs/diagnostics/ccs_vr.pdf")
+```{r, include=TRUE, fig.align="center", fig.cap=c("ccs_vr_diagnostics"), echo=FALSE, fig.height=5.9*4,fig.width=4.2*4}
+knitr::include_graphics("analysisOutputs/diagnostics/ccs_vr.png")
 ```
 
 Some thoughts: 
@@ -449,8 +449,8 @@ all.models[[2]] <- all.ccs2
 
 For within the VE:
 
-```{r, include=TRUE, fig.align="center", fig.cap=c("ccs_condition_diagnostics"), echo=FALSE}
-knitr::include_graphics("analysisOutputs/diagnostics/ccs_condition.pdf")
+```{r, include=TRUE, fig.align="center", fig.cap=c("ccs_condition_diagnostics"), echo=FALSE, fig.height=5.9*4,fig.width=4.2*4}
+knitr::include_graphics("analysisOutputs/diagnostics/ccs_condition.png")
 ```
 
 
@@ -469,8 +469,8 @@ vr.models[[2]] <- vr.ccs2
 ```
 ### NR
 
-```{r, include=TRUE, fig.align="center", fig.cap=c("nr_vr_diagnostics"), echo=FALSE}
-knitr::include_graphics("analysisOutputs/diagnostics/iat_vr.pdf")
+```{r, include=TRUE, fig.align="center", fig.cap=c("nr_vr_diagnostics"), echo=FALSE, fig.height=5.9*4,fig.width=4.2*4}
+knitr::include_graphics("analysisOutputs/diagnostics/iat_vr.png")
 ```
 
 Model assumptions are not too far off: 
@@ -484,8 +484,8 @@ Overall assumptions seem acceptable and warrant no further action.
 
 ### NEP
 
-```{r, include=TRUE, fig.align="center", fig.cap=c("nep_vr_diagnostics"), echo=FALSE}
-knitr::include_graphics("analysisOutputs/diagnostics/nep_vr.pdf")
+```{r, include=TRUE, fig.align="center", fig.cap=c("nep_vr_diagnostics"), echo=FALSE, fig.height=5.9*4,fig.width=4.2*4}
+knitr::include_graphics("analysisOutputs/diagnostics/nep_vr.png")
 ```
 Model assumptions are not too far off: 
 Slight slope in the "fitted vs residuals". 
@@ -496,8 +496,8 @@ Overall assumptions seem acceptable and warrant no further action.
 
 ### Principal component
 
-```{r, include=TRUE, fig.align="center", fig.cap=c("env_pc_vr_diagnostics"), echo=FALSE}
-knitr::include_graphics("analysisOutputs/diagnostics/env_pc_vr.pdf")
+```{r, include=TRUE, fig.align="center", fig.cap=c("env_pc_vr_diagnostics"), echo=FALSE, fig.height=5.9*4,fig.width=4.2*4}
+knitr::include_graphics("analysisOutputs/diagnostics/env_pc_vr.png")
 ```
 
 ```{r}
