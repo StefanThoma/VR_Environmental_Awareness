@@ -15,7 +15,7 @@ Install / load packages needed:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 if (!require("pacman")) install.packages("pacman")
-p_load(tidyverse, lme4, lmerTest, mvoutlier, nlme, multcomp, lsmeans, xtable, jtools, tikzDevice, gmodels, parallel, performance, optimx)
+p_load(tidyverse, lme4, lmerTest, mvoutlier, nlme, multcomp, lsmeans, xtable, jtools, tikzDevice, gmodels, parallel, performance, optimx, tidylog)
 #pacman::p_load_gh("jaredhuling/jcolors")
 #jcolors::jcolors("default")
 #ggplot <- function(...) ggplot2::ggplot(...) + scale_color_brewer(palette=jcolors::jcolors()) + scale_fill_brewer(palette=jcolors::jcolors()) + #ggplot2::scale_colour_brewer(palette=jcolors::jcolors()) + ggplot2::scale_color_discrete(palette=jcolors::jcolors()) #+ ggplot2::scale_fill_discrete(palette=jcolors::jcolors())
@@ -122,6 +122,14 @@ alphas <- c(alpha.1, alpha.2)
 (alpha.df <- do.call("rbind", alphas) %>%
   dplyr::select(var, alpha, ci.low, ci.up))
 ```
+cronbach alpha of nep is relatively small. 
+What would mcdonalds omega look like for nep?
+```{r}
+psych::omega(data[vars.list1[[3]]], nfactors = 1)
+```
+
+Omega Total 0.71 seems ok.
+
 
 For the following analysis we reduce the dataframe.
 
@@ -391,12 +399,33 @@ dvs <-  c("iat", "ccs", "nr", "nep", "env_pc")
 ```
 
 
-## Initial model fitting
 
 ```{r}
 # split data frame:
 data.vr <- data %>% dplyr::filter(vr) 
 ```
+
+Contrast:
+We want the effect of "time" to be the average effect over all conditions.
+Therefore we set the contrast of the condition variable to `contr.sum` in accordance with https://stats.oarc.ucla.edu/r/library/r-library-contrast-coding-systems-for-categorical-variables/#DEVIATION.
+This is sometimes called `unweighted effect coding` or `deviation coding`.
+
+
+```{r}
+data.vr$condition <-droplevels(data.vr$condition)
+contrasts(data.vr$condition) <- contr.sum(3)
+
+contrasts(data$vr) <- contr.sum(2)
+```
+
+
+
+
+
+## Initial model fitting
+
+
+
 
 ```{r}
 vr.models <- lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors.vr, dat = data.vr, dv = dv))
@@ -411,6 +440,8 @@ all.models  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors
 ```{r, include = FALSE}
 all.models2  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors.all2, dat = data, dv = dv))
 ```
+
+
 ```{r, include = FALSE}
 #NEP
 anova(all.models2[[4]], all.models[[4]])
@@ -1448,8 +1479,13 @@ dev.off()
 <!-- stats: -->
 
 ```{r}
-data.desc <- subset(data, subset =( vr & time==1) ) %>%
+contrasts(data$vr) <- NULL
+contrasts(data$condition) <- NULL
+class(data$vr)
+data.desc <- data %>% filter(vr == TRUE, time == 1) %>%
   ungroup()
+
+
 
 scls <- c("excitement", "graphically pleasing", "pleasant", "realistic", "enjoyment")
 
