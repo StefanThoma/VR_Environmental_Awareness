@@ -26,27 +26,30 @@ data <- read_csv("data/cleanData.csv")
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
 ``` r
-data <- data %>% dplyr::select(
-  id, time, iat, ccs, nr, nep, ipq, sod, ses, age, edu, sex, pol, vr_exp, vr_eval1, vr_eval2, vr_eval3,
-  vr_eval4, vr_eval5, span, seen, condition, starts_with("Frage"), hr_mean, Leiter, Anmerkungen, Zeit
-)
+#data <- data %>% dplyr::select(
+#  id, time, iat, ccs, nr, nep, ipq, sod, ses, age, edu, sex, pol, vr_exp, vr_eval1, vr_eval2, vr_eval3,
+#  vr_eval4, vr_eval5, span, seen, condition, starts_with("Frage"), hr_mean, Leiter, Anmerkungen, Zeit
+#)
 
 head(data)
 ```
 
-    ## # A tibble: 6 × 29
-    ##   id     time    iat   ccs    nr   nep   ipq   sod   ses   age   edu sex     pol
-    ##   <chr> <dbl>  <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <chr> <dbl>
-    ## 1 2828…     1  0.179  1.08  3.48  4.07    NA    NA  1.76    54     5 W         3
-    ## 2 2828…     2  0.409  1     3.10  4.2     NA    NA  1.71    54     5 W         3
-    ## 3 7799…     1 -0.496  1.17  4.14  3.93    NA    NA  1.53    21     4 M         2
-    ## 4 7799…     2 -0.362  1.08  4.38  4.27    NA    NA  1.35    21     4 M         2
-    ## 5 4379…     1  0.517  1.33  3.43  3.73    NA    NA  1.59    25     5 W         2
-    ## 6 4379…     2  0.634  1.33  3.38  3.93    NA    NA  1.53    25     5 W         2
-    ## # … with 16 more variables: vr_exp <dbl>, vr_eval1 <dbl>, vr_eval2 <dbl>,
-    ## #   vr_eval3 <dbl>, vr_eval4 <dbl>, vr_eval5 <dbl>, span <dbl>, seen <dbl>,
-    ## #   condition <chr>, Frage1 <chr>, Frage2 <chr>, Frage3 <chr>, hr_mean <dbl>,
-    ## #   Leiter <chr>, Anmerkungen <chr>, Zeit <chr>
+    ## # A tibble: 6 × 131
+    ##   id        time    iat StartDate  ccs1  ccs2  ccs3  ccs4  ccs5  ccs6
+    ##   <chr>    <dbl>  <dbl> <dttm>    <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
+    ## 1 28287312     1  0.179 NA            1     1     2     1     1     1
+    ## 2 28287312     2  0.409 NA            1     1     1     1     1     1
+    ## 3 77995467     1 -0.496 NA            1     1     1     1     1     1
+    ## 4 77995467     2 -0.362 NA            1     1     1     1     1     1
+    ## 5 43795961     1  0.517 NA            2     1     1     1     2     1
+    ## 6 43795961     2  0.634 NA            2     1     1     1     2     1
+    ## # … with 121 more variables: ccs7 <dbl>, ccs8 <dbl>, ccs9 <dbl>, ccs10 <dbl>,
+    ## #   ccs11 <dbl>, ccs12 <dbl>, nr1 <dbl>, nr2 <dbl>, nr3 <dbl>, nr4 <dbl>,
+    ## #   nr5 <dbl>, nr6 <dbl>, nr7 <dbl>, nr8 <dbl>, nr9 <dbl>, nr10 <dbl>,
+    ## #   nr11 <dbl>, nr12 <dbl>, nr13 <dbl>, nr14 <dbl>, nr15 <dbl>, nr16 <dbl>,
+    ## #   nr17 <dbl>, nr18 <dbl>, nr19 <dbl>, nr20 <dbl>, nr21 <dbl>, nep1 <dbl>,
+    ## #   nep2 <dbl>, nep3 <dbl>, nep4 <dbl>, nep5 <dbl>, nep6 <dbl>, nep7 <dbl>,
+    ## #   nep8 <dbl>, nep9 <dbl>, nep10 <dbl>, nep11 <dbl>, nep12 <dbl>, …
 
 ``` r
 # factor for vr or not
@@ -83,6 +86,73 @@ data$id[c(142,144,275)]
 
     ## [1] "90811768" "78489627" "04901439"
 
+# Descriptives
+
+## Reliability
+
+``` r
+vars <- names(data)
+
+ccs.vars <- vars[startsWith(vars, "ccs")]
+nr.vars <- vars[startsWith(vars, "nr")]
+nep.vars <- vars[startsWith(vars, "nep")]
+ipq.vars <- vars[startsWith(vars, "ipq")]
+sod.vars <- vars[startsWith(vars, "sod")]
+
+vars.list1 <- list(ccs.vars, nr.vars, nep.vars)
+vars.list2 <- list(ipq.vars, sod.vars)
+
+#remove overall score (shortest name)
+# this is a bit more robust compared to simply removing the last item
+remove_overall <- function(char.vec){
+ nm <- char.vec[which.min(nchar(char.vec))]
+ char.vec <- char.vec[-which.min(nchar(char.vec))]
+ char.vec
+}
+
+vars.list1 <- lapply(vars.list1, remove_overall)
+vars.list2 <- lapply(vars.list2, remove_overall)
+
+
+
+reliable <- function(data, vars){
+  alph <- psych::alpha(data[vars], title = vars[1])
+
+  #omeg <- psych::omega(data[vars], plot = FALSE)
+ df <- data.frame(alpha = alph$total$raw_alpha, ci.low = alph$total$raw_alpha - 1.96 * alph$total$ase, ci.up = alph$total$raw_alpha + 1.96 * alph$total$ase)
+ df <- round(df, 3)
+ df$var = vars[1]
+ df
+}
+
+
+# measures which are measured twice
+alpha.1 <- lapply(vars.list1, function(x) reliable(data = data, x))
+# measures which are measured only once (sod and ipq)
+alpha.2 <- lapply(vars.list2, function(x) reliable(data = data %>% filter(time == 1), x))
+
+alphas <- c(alpha.1, alpha.2)
+
+(alpha.df <- do.call("rbind", alphas) %>%
+  dplyr::select(var, alpha, ci.low, ci.up))
+```
+
+    ##     var alpha ci.low ci.up
+    ## 1  ccs1 0.845  0.819 0.871
+    ## 2   nr1 0.840  0.813 0.866
+    ## 3  nep1 0.686  0.632 0.739
+    ## 4  ipq1 0.826  0.785 0.867
+    ## 5 sod_1 0.805  0.759 0.852
+
+For the following analysis we reduce the dataframe.
+
+``` r
+data <- data %>% dplyr::select(
+  id, time, vr, condition, iat, ccs, nr, nep, ipq, sod, ses, age, edu, sex, pol, vr_exp, vr_eval1, vr_eval2, vr_eval3,
+  vr_eval4, vr_eval5, span, seen, starts_with("Frage"), hr_mean, Leiter, Anmerkungen, Zeit
+)
+```
+
 # Principal component analysis
 
 We try to find an acceptable model for each DV.
@@ -95,7 +165,7 @@ df_env <- data[c("iat", "ccs", "nr", "nep")]
 psych::fa.parallel(df_env)
 ```
 
-![](analysis_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
     ## Parallel analysis suggests that the number of factors =  1  and the number of components =  1
 
@@ -184,7 +254,7 @@ desc_plot_data <- gather(data, specific, value, vars) %>%
 
     ## Warning: Removed 304 rows containing missing values (geom_point).
 
-![](analysis_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
 ipq_sod_plot_data <- gather(data, scale, value, c("ipq", "sod")) %>%
@@ -211,7 +281,7 @@ ipq_sod_plot <- ggplot(data = ipq_sod_plot_data, aes(x = VRE, y = value, color =
 
     ## Warning: Removed 5 rows containing missing values (geom_point).
 
-![](analysis_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->
 
 # HLM
 
@@ -249,6 +319,8 @@ If still singular, we would simplify to:
 ``` r
 fit.lme <- function(form, dat){
   lme4::lmer(formula = form, data = dat)
+  #lme4::lmer(formula = form, data = dat, 
+  #           control = lmerControl(optimizer = "optimx", optCtrl = list(method = "nlminb", starttests = FALSE, kkt = FALSE))) # alternative optimizer
 }
 ```
 
@@ -299,7 +371,7 @@ dvs <-  c("iat", "ccs", "nr", "nep", "env_pc")
 
 ``` r
 # split data frame:
-data.vr <- data %>% filter(vr) 
+data.vr <- data %>% dplyr::filter(vr) 
 ```
 
 ``` r
@@ -307,34 +379,34 @@ vr.models <- lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors.vr
 ```
 
     ## iat ~ condition * time + (time | id)
-    ## <environment: 0x7faf8f2a77e0>
+    ## <environment: 0x7f7d57860a60>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## iat ~ condition * time + (1 | id)
-    ## <environment: 0x7faf9e85d938>
+    ## <environment: 0x7f7d54b84f30>
     ## [1] "is model singular:  FALSE"
     ## ccs ~ condition * time + (time | id)
-    ## <environment: 0x7fafaa5e1b70>
+    ## <environment: 0x7f7d67280718>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## ccs ~ condition * time + (1 | id)
-    ## <environment: 0x7fafa8f18320>
+    ## <environment: 0x7f7d541e3e78>
     ## [1] "is model singular:  FALSE"
     ## nr ~ condition * time + (time | id)
-    ## <environment: 0x7faffa443a70>
+    ## <environment: 0x7f7d765b3920>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## nr ~ condition * time + (1 | id)
-    ## <environment: 0x7faffe1e7900>
+    ## <environment: 0x7f7d34986e78>
     ## [1] "is model singular:  FALSE"
     ## nep ~ condition * time + (time | id)
-    ## <environment: 0x7faffbaeabe0>
+    ## <environment: 0x7f7d35f524b0>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## nep ~ condition * time + (1 | id)
-    ## <environment: 0x7faffb863970>
+    ## <environment: 0x7f7d339b8208>
     ## [1] "is model singular:  FALSE"
     ## env_pc ~ condition * time + (time | id)
-    ## <environment: 0x7faff95dbe60>
+    ## <environment: 0x7f7d25f9bc10>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## env_pc ~ condition * time + (1 | id)
-    ## <environment: 0x7faff92b2cf8>
+    ## <environment: 0x7f7d356cc360>
     ## [1] "is model singular:  FALSE"
 
 ``` r
@@ -342,54 +414,54 @@ all.models  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors
 ```
 
     ## iat ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7fafe87893c8>
+    ## <environment: 0x7f7d32e15b60>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## iat ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fafe9582f10>
+    ## <environment: 0x7f7d32e9ffe0>
     ## [1] "is model singular:  FALSE"
     ## ccs ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7faf8eba2f98>
+    ## <environment: 0x7f7d31a02440>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## ccs ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7faf8dea09b0>
+    ## <environment: 0x7f7d244a98b8>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## ccs ~ vr * time + (1 | id)
-    ## <environment: 0x7faf8c98c130>
+    ## <environment: 0x7f7d250bfbb0>
     ## [1] "is model singular:  FALSE"
     ## nr ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7faf8d6d69e8>
+    ## <environment: 0x7f7d30851660>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## nr ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fafa92a3b88>
+    ## <environment: 0x7f7d266d80f8>
     ## [1] "is model singular:  FALSE"
     ## nep ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7fafa91df1a0>
+    ## <environment: 0x7f7d2627afd0>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## nep ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fb00969b010>
+    ## <environment: 0x7f7d323b2ef0>
     ## [1] "is model singular:  FALSE"
     ## env_pc ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7fafa9c53158>
+    ## <environment: 0x7f7d361187c8>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## env_pc ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fb008dcf070>
+    ## <environment: 0x7f7d24e6dc48>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## env_pc ~ vr * time + (1 | id)
-    ## <environment: 0x7faf8edb13c8>
+    ## <environment: 0x7f7d37086210>
     ## [1] "is model singular:  FALSE"
 
 ## Model diagnostics
@@ -507,7 +579,7 @@ Maybe a boxcox transformation may help:
 bc <- boxcox(ccs ~ vr * time, data = data)
 ```
 
-![](analysis_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 ``` r
 lambda_ccs <- bc$x[which.max(bc$y)]
@@ -522,24 +594,24 @@ all.ccs2 <- fit_many(pred.vector = predictors.all, dat = data, dv = "ccs_bc")
 ```
 
     ## ccs_bc ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7fafa9b1bb00>
+    ## <environment: 0x7f7d340c9c30>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## ccs_bc ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fb008177510>
+    ## <environment: 0x7f7d57fe9928>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## ccs_bc ~ vr * time + (1 | id)
-    ## <environment: 0x7faffa5ab0b8>
+    ## <environment: 0x7f7d573d1ee0>
     ## [1] "is model singular:  FALSE"
 
 ``` r
 performance::check_model(all.ccs2)
 ```
 
-![](analysis_files/figure-gfm/unnamed-chunk-21-2.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-23-2.png)<!-- -->
 
 The situation has improved! All model assumptions appear plausible.
 
@@ -568,17 +640,17 @@ vr.ccs2 <- fit_many(pred.vector = predictors.vr, dat = data.vr, dv = "ccs_bc")
 ```
 
     ## ccs_bc ~ condition * time + (time | id)
-    ## <environment: 0x7faffa473568>
+    ## <environment: 0x7f7d4158caa8>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## ccs_bc ~ condition * time + (1 | id)
-    ## <environment: 0x7faffe16eb20>
+    ## <environment: 0x7f7d417a01b0>
     ## [1] "is model singular:  FALSE"
 
 ``` r
 performance::check_model(vr.ccs2)
 ```
 
-![](analysis_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ``` r
 vr.models[[2]] <- vr.ccs2
@@ -643,7 +715,7 @@ data$env_pc2 <- data$env_pc + 6
 bc <- boxcox(env_pc2 ~ vr * time, data = data)
 ```
 
-![](analysis_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 ``` r
 lambda_pc <- bc$x[which.max(bc$y)]
@@ -658,24 +730,24 @@ all.env_pc2 <- fit_many(pred.vector = predictors.all, dat = data, dv = "env_pc_b
 ```
 
     ## env_pc_bc ~ vr * time + (time | condition) + (1 | id)
-    ## <environment: 0x7fb00926fd20>
+    ## <environment: 0x7f7d55dfb288>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## env_pc_bc ~ vr * time + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7faf9969f0e8>
+    ## <environment: 0x7f7d32816710>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## env_pc_bc ~ vr * time + (1 | id)
-    ## <environment: 0x7fafa8282028>
+    ## <environment: 0x7f7d26637d08>
     ## [1] "is model singular:  FALSE"
 
 ``` r
 performance::check_model(all.env_pc2)
 ```
 
-![](analysis_files/figure-gfm/unnamed-chunk-29-2.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-31-2.png)<!-- -->
 
 Transformation does not help much here. Lets not do it.
 
@@ -1581,7 +1653,7 @@ make.x.table(all.models, save = FALSE)
     ## Computing profile confidence intervals ...
 
     ## % latex table generated in R 4.1.2 by xtable 1.8-4 package
-    ## % Sat Feb 12 00:32:14 2022
+    ## % Fri Feb 18 11:04:50 2022
     ## \begin{table}[ht]
     ## \centering
     ## \begin{tabular}{llrlr}
@@ -1629,7 +1701,7 @@ make.x.table(vr.models, save = FALSE)
     ## Computing profile confidence intervals ...
 
     ## % latex table generated in R 4.1.2 by xtable 1.8-4 package
-    ## % Sat Feb 12 00:32:18 2022
+    ## % Fri Feb 18 11:04:54 2022
     ## \begin{table}[ht]
     ## \centering
     ## \begin{tabular}{llrlr}
@@ -2018,7 +2090,7 @@ vr.nonvr.mean <- do.call("rbind", vr.nonvr.mean.list)
 
     ## Warning: Use of `df$`97.5 %`` is discouraged. Use `97.5 %` instead.
 
-![](analysis_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
 
 Then for only between the VE conditions:
 
@@ -2038,7 +2110,7 @@ onlyvr.cond.mean <- do.call("rbind", onlyvr.cond.mean.list)
 
     ## Warning: Use of `df$`97.5 %`` is discouraged. Use `97.5 %` instead.
 
-![](analysis_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
 
 save plots
 

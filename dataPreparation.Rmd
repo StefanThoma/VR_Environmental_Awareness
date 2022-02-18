@@ -42,15 +42,16 @@ master[namesInExpNotInMaster] <- NA
 exp_uebung[namesInMasterNotInExp] <- NA
 
 namesInMaster <- names(master)
-
+names(exp_uebung)
 # make order the same for exp_uebung
 exp_uebung <- exp_uebung %>%
-  select(all_of(namesInMaster))
+  dplyr::select(all_of(namesInMaster))
+
 ```
 
 ```{r}
 data <- bind_rows(exp_uebung, master)
-data <- data %>% select(-`sex_3_TEXT - Topics`)
+data <- data %>% dplyr::select(-`sex_3_TEXT - Topics`)
 ```
 
 ## Recode Items
@@ -64,11 +65,11 @@ Also, it should be fairly obvious which are reversely coded when reading the que
 Look what data looks like regarding coding.
 Checked with a principal component analysis.
 ```{r, eval = FALSE}
-psych::pca(r = data %>% select(starts_with("nep")))
-psych::pca(r = data %>% select(starts_with("nr")))
-psych::pca(r = data %>% select(starts_with("ccs")))
-psych::pca(r = data %>% select(starts_with("ipq")))
-psych::pca(r = data %>% select(starts_with("sod"))) # looks like sod_1 is kinda different! 
+psych::pca(r = data %>% dplyr::select(starts_with("nep")))
+psych::pca(r = data %>% dplyr::select(starts_with("nr")))
+psych::pca(r = data %>% dplyr::select(starts_with("ccs")))
+psych::pca(r = data %>% dplyr::select(starts_with("ipq")))
+psych::pca(r = data %>% dplyr::select(starts_with("sod"))) # looks like sod_1 is kinda different! 
 # But according to theory, this is correctly coded. 
 ```
 Define Items to be recoded.
@@ -83,11 +84,11 @@ sod_reorder <- paste("sod", c( 2, 4, 5, 6, 7, 8), sep = "_")
 
 Check on what scale the items are coded:
 ```{r, EVAL = FALSE}
-range(data %>% select(starts_with("nep"))) # 1 to 5 so 1 becomes 5, 2 becomes 4, etc...
-range(data %>% select(starts_with("nr"))) # 1 to 5 so 1 becomes 5, 2 becomes 4, etc...
-range(data %>% select(starts_with("ccs"))) # 1 to 5 so 1 becomes 5, 2 becomes 4, etc...
-summary(data %>% select(starts_with("ipq"))) # 1 to 7 so 1 becomes 7, 2 becomes 6, etc...
-summary(data %>% select(starts_with("sod"))) # 1 to 7  so 1 becomes 7, 2 becomes 6, etc...
+range(data %>%   dplyr::select(starts_with("nep"))) # 1 to 5 so 1 becomes 5, 2 becomes 4, etc...
+range(data %>%   dplyr::select(starts_with("nr"))) # 1 to 5 so 1 becomes 5, 2 becomes 4, etc...
+range(data %>%   dplyr::select(starts_with("ccs"))) # 1 to 5 so 1 becomes 5, 2 becomes 4, etc...
+summary(data %>% dplyr::select(starts_with("ipq"))) # 1 to 7 so 1 becomes 7, 2 becomes 6, etc...
+summary(data %>% dplyr::select(starts_with("sod"))) # 1 to 7  so 1 becomes 7, 2 becomes 6, etc...
 ```
 
 ### helping function
@@ -130,11 +131,11 @@ data_clean <- umpolen5(c(nep_reorder, nr_reorder), dat = data_clean)
 ### did it work?
 ```{r}
 data <- data %>% filter(Leiter != "Stefan") 
-psych::pca(r = data_clean %>% select(starts_with("nep")))
-psych::pca(r = data_clean %>% select(starts_with("nr")))
-psych::pca(r = data_clean %>% select(starts_with("ccs")))
-psych::pca(r = data_clean %>% select(starts_with("ipq")))
-psych::pca(r = data_clean %>% select(starts_with("sod")))
+psych::pca(r = data_clean %>% dplyr::select(starts_with("nep")))
+psych::pca(r = data_clean %>% dplyr::select(starts_with("nr")))
+psych::pca(r = data_clean %>% dplyr::select(starts_with("ccs")))
+psych::pca(r = data_clean %>% dplyr::select(starts_with("ipq")))
+psych::pca(r = data_clean %>% dplyr::select(starts_with("sod")))
 ```
 Again,  it becomes apparent that sod_1 is weird. Go and check the question and think why this could be. 
 Should we still keep it in the analysis?
@@ -143,12 +144,12 @@ Should we still keep it in the analysis?
 I just calculate it for one of the scores. The rest you have to do yourself. 
 
 ```{r  score means}
-data_clean$nep <- rowMeans(data_clean %>% select(starts_with("nep")))
-data_clean$nr <- rowMeans(data_clean %>% select(starts_with("nr")))
-data_clean$ccs <- rowMeans(data_clean %>% select(starts_with("ccs")))
-data_clean$ipq <- rowMeans(data_clean %>% select(starts_with("ipq")))
-data_clean$sod <- rowMeans(data_clean %>% select(starts_with("sod")))
-data_clean$ses <- rowMeans(data_clean %>% select(starts_with("SES")))
+data_clean$nep <- rowMeans(data_clean %>% dplyr::select(starts_with("nep")))
+data_clean$nr <-  rowMeans(data_clean %>% dplyr::select(starts_with("nr")))
+data_clean$ccs <- rowMeans(data_clean %>% dplyr::select(starts_with("ccs")))
+data_clean$ipq <- rowMeans(data_clean %>% dplyr::select(starts_with("ipq")))
+data_clean$sod <- rowMeans(data_clean %>% dplyr::select(starts_with("sod")))
+data_clean$ses <- rowMeans(data_clean %>% dplyr::select(starts_with("SES")))
 ```
 
 ```{r}
