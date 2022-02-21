@@ -35,6 +35,7 @@ head(data)
 data <- data %>% group_by(id) %>% 
   mutate(
     vr = ifelse(condition %in% c("a", "b", "c"), TRUE, FALSE), 
+    type = factor(ifelse(vr, "vr", "control")),
     condition = factor(condition, levels = c("b", "a", "c", "video", "text.bild", "text"))
   )
 
@@ -51,23 +52,23 @@ b == realistic
 c == realistic but badly so
 
 
-## Check for multivariate outlier
+<!-- ## Check for multivariate outlier -->
 
-```{r, eval = FALSE}
-# mvoutlier::chisq.plot(data[,c(3:6)])
-# [1] 124 162 161  29  54
+<!-- ```{r, eval = FALSE} -->
+<!-- # mvoutlier::chisq.plot(data[,c(3:6)]) -->
+<!-- # [1] 124 162 161  29  54 -->
 
-# removing three most extreme cases
-rmId <- data$id[c(124, 161, 162)]
+<!-- # removing three most extreme cases -->
+<!-- rmId <- data$id[c(124, 161, 162)] -->
 
-data <- data %>% filter(!id %in% rmId)
+<!-- data <- data %>% filter(!id %in% rmId) -->
 
-```
+<!-- ``` -->
 
-```{r}
-data$id[c(142,144,275)]
+<!-- ```{r} -->
+<!-- data$id[c(142,144,275)] -->
 
-```
+<!-- ``` -->
 
 
 
@@ -135,7 +136,8 @@ For the following analysis we reduce the dataframe.
 
 ```{r}
 data <- data %>% dplyr::select(
-  id, time, vr, condition, iat, ccs, nr, nep, ipq, sod, ses, age, edu, sex, pol, vr_exp, vr_eval1, vr_eval2, vr_eval3,
+  id, time, vr, type, condition, iat, ccs, nr, nep, ipq, sod, ses, age, edu, sex, pol, vr_exp, vr_eval1, vr_eval2, vr_eval3,
+  
   vr_eval4, vr_eval5, span, seen, starts_with("Frage"), hr_mean, Leiter, Anmerkungen, Zeit
 )
 ```
@@ -369,8 +371,9 @@ fit_models <- function(dv, dat){
 
 ```{r}
 predictors.vr <-  c("condition * time + (time | id)", "condition * time + (1 | id)")
-predictors.all <- c("vr * time + (time | condition) + (1 | id)", "vr * time + (-1 + time | condition) + (1 | id)", "vr * time + (1 | id)")
-predictors.all2 <- c("vr * time + (time | condition) + (1 | id)", "vr * time + (1 | condition) + (1 | id)", "vr * time + (1 | id)")
+predictors.all <- c("time*type + (time | condition) + (1 | id)", "time * type + (-1 + time | condition) + (1 | id)", "time * type + (1 | id)")
+#predictors.all2 <- c("vr * time + (time | condition) + (1 | id)", "vr * time + (1 | condition) + (1 | id)", "vr * time + (1 | id)")
+#predictors.all3 <- c("vr * time + (time | condition) + (1 | id)", "vr * time + (-1 + time | condition) + (1 | id)", "vr * time + (1 | id)")
 # function to fit various models based on different inputs of predictors
 fit_many <- function(pred.vector, dat, dv){
   fit_model <- fit_models(dv, dat)
@@ -415,7 +418,7 @@ This is sometimes called `unweighted effect coding` or `deviation coding`.
 data.vr$condition <-droplevels(data.vr$condition)
 contrasts(data.vr$condition) <- contr.sum(3)
 
-contrasts(data$vr) <- contr.sum(2)
+contrasts(data$type) <- contr.sum(2)
 ```
 
 
@@ -437,18 +440,18 @@ all.models  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors
 ```
 
 
-```{r, include = FALSE}
-all.models2  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors.all2, dat = data, dv = dv))
-```
+<!-- ```{r, include = FALSE} -->
+<!-- all.models2  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors.all2, dat = data, dv = dv)) -->
+<!-- ``` -->
 
 
-```{r, include = FALSE}
-#NEP
-anova(all.models2[[4]], all.models[[4]])
+<!-- ```{r, include = FALSE} -->
+<!-- #NEP -->
+<!-- anova(all.models2[[4]], all.models[[4]]) -->
 
-all.models2[[4]]
-all.models[[4]]
-```
+<!-- all.models2[[4]] -->
+<!-- all.models[[4]] -->
+<!-- ``` -->
 
 
 
@@ -628,9 +631,30 @@ lapply(all.models, FUN = plot_diagn)
 
 ### vr vs control
 
+
+```{r}
+lapply(all.models, FUN = lmerTest:::summary.lmerModLmerTest)
+```
+Follow up tests: 
+
+```{r}
+# iat
+contrast( emmeans(all.models[[1]],  ~ time | type))
+# ccs
+contrast( emmeans(all.models[[2]],  ~ time | type))
+# nr
+contrast( emmeans(all.models[[3]],  ~ time | type))
+# nep
+contrast( emmeans(all.models[[4]],  ~ time | type))
+```
+
+
+### Within the VEs (condition)
+
 ```{r}
 lapply(vr.models, FUN = lmerTest:::summary.lmerModLmerTest)
 ```
+
 contrast analysis:
 
 ```{r}
@@ -643,25 +667,6 @@ contrast( emmeans(vr.models[[3]],  ~ time | condition))
 # nep
 contrast( emmeans(vr.models[[4]],  ~ time | condition))
 ```
-
-
-### Within the VEs (condition)
-```{r}
-lapply(all.models, FUN = lmerTest:::summary.lmerModLmerTest)
-```
-Follow up tests: 
-
-```{r}
-# iat
-contrast( emmeans(all.models[[1]],  ~ time | vr))
-# ccs
-contrast( emmeans(all.models[[2]],  ~ time | vr))
-# nr
-contrast( emmeans(all.models[[3]],  ~ time | vr))
-# nep
-contrast( emmeans(all.models[[4]],  ~ time | vr))
-```
-
 #### Model comparisons
 
 
@@ -1206,7 +1211,7 @@ ci.plot <- function(colorby = "condition"){
     }
 }
 
-ci.plot.vr <- ci.plot("vr")
+ci.plot.vr <- ci.plot("type")
 ci.plot.condition <- ci.plot("condition")
 
 #ci.plot.condition(vr.res.md.comp.mean)
@@ -1305,7 +1310,8 @@ df.predicted.all <- data.frame(
   id = rep(as.factor(1:6), each = 2),
   time = rep(1:2, times = 6),
   condition = rep(levels(as.factor(data$condition)), each = 2),
-  vr = rep(c(T, F), each = 6)
+  vr = rep(c(TRUE, FALSE), each = 6),
+  type = rep(c("vr", "control"), each = 6)
 )
 
 df.predicted.vr <- df.predicted.all %>% filter(vr)
