@@ -38,10 +38,6 @@ data <- data %>% group_by(id) %>%
     type = factor(ifelse(vr, "vr", "control")),
     condition = factor(condition, levels = c("b", "a", "c", "video", "text.bild", "text"))
   )
-
-
-
-
 ```
 Keep in mind the conditions coding: 
 
@@ -132,13 +128,29 @@ psych::omega(data[vars.list1[[3]]], nfactors = 1)
 Omega Total 0.71 seems ok.
 
 
+
+
+### Check NEP structure
+
+```{r}
+psych::principal(r = data[nep.vars[-length(nep.vars)]])
+```
+
+
+
+
+
+
+
+
+
+
+
 For the following analysis we reduce the dataframe.
 
 ```{r}
 data <- data %>% dplyr::select(
-  id, time, vr, type, condition, iat, ccs, nr, nep, ipq, sod, ses, age, edu, sex, pol, vr_exp, vr_eval1, vr_eval2, vr_eval3,
-  
-  vr_eval4, vr_eval5, span, seen, starts_with("Frage"), hr_mean, Leiter, Anmerkungen, Zeit
+  id, time, vr, type, condition, iat, ccs, nr, nep, ipq, sod, ses, age, edu, sex, pol, vr_exp, vr_eval1, vr_eval2, vr_eval3, vr_eval4, vr_eval5, span, seen, starts_with("Frage"), hr_mean, Leiter, Anmerkungen, Zeit
 )
 ```
 
@@ -267,9 +279,9 @@ desc_plot_data <- gather(data, specific, value, vars) %>%
                                ifelse(specific=="vr_eval3", "pleasant",
                                       ifelse(specific=="vr_eval4", "realistic", 
                                              ifelse(specific=="vr_eval5", "enjoyment", specific))))),
-         VRE = ifelse(condition == "b", "R+",
-                      ifelse(condition=="c", "R-",
-                             ifelse(condition=="a", "A+", condition)))) %>%
+         VRE = ifelse(condition == "b", "Real+",
+                      ifelse(condition=="c", "Real-",
+                             ifelse(condition=="a", "Abstract", as.character(condition))))) %>%
   dplyr::select(specific, value, id, VRE)
 
 
@@ -277,15 +289,22 @@ desc_plot_data <- gather(data, specific, value, vars) %>%
   facet_wrap( ~specific, nrow = 2)+
   geom_violin(draw_quantiles = .5) + #, position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0, jitter.height = 0))+
   geom_point(alpha = .3, position = "jitter")+#, position = position_jitterdodge(dodge.width = 0, jitter.width = .2, jitter.height = .3)) +
-  ggthemes::theme_tufte() +
+  ggthemes::theme_few() +
   ylab("value") +
-  xlab("question")+
-  #labs(title="Evaluation of Virtual Environments")+
+  xlab("")+
+ # labs(title="")+    
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())+
+
   scale_y_continuous(breaks = c(1,3,5,7)) +
-  theme(legend.position = "bottom") )
+  theme(legend.position = "right") )
+```
 
 
+ipq and sod separately:
 
+```{r, include = FALSE}
 ipq_sod_plot_data <- gather(data, scale, value, c("ipq", "sod")) %>%
   filter(time==1, condition %in% c("a", "b", "c", "video")) %>%
   arrange(id, scale) %>%
@@ -302,10 +321,12 @@ ipq_sod_plot <- ggplot(data = ipq_sod_plot_data, aes(x = VRE, y = value, color =
   ggthemes::theme_tufte() +
   ylab("scores") +
   xlab("scale")+
+  
   #labs(title="Presence (IPQ) and Suspension of Disbelief (SOD)")+
   scale_y_continuous(breaks = c(1,3,5,7), limits = c(1,7)); ipq_sod_plot
 
 ```
+
 
 
 # HLM 
@@ -338,7 +359,6 @@ Should model fit be singular, we would simplify the model to:
 If still singular, we would simplify to: 
 
 `dv ~ vr * time + (1 | id)`
-
 
 
 
@@ -440,6 +460,16 @@ all.models  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors
 ```
 
 
+```{r}
+presence.models <- lapply(dvs, FUN = function(dv) fit_many(pred.vector = "ipq * time + (1 | id)", dat = data.vr, dv = dv))
+
+```
+```{r}
+sod.models <- lapply(dvs, FUN = function(dv) fit_many(pred.vector = "sod * time + (1 | id)", dat = data.vr, dv = dv))
+
+```
+
+
 <!-- ```{r, include = FALSE} -->
 <!-- all.models2  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors.all2, dat = data, dv = dv)) -->
 <!-- ``` -->
@@ -503,6 +533,18 @@ Homogeneity of variance seems acceptable.
 Random effects appear normal. 
 
 ### CCS
+
+First some descriptives about ccs.
+```{r}
+data %>% group_by(as.factor(time)) %>%
+  summarise(mean = mean(ccs),
+            range = range(ccs), 
+            median = median(ccs))
+
+```
+
+
+
 ```{r, include=TRUE, fig.align="center", fig.cap=c("ccs_vr_diagnostics"), echo=FALSE, fig.height=5.9*4,fig.width=4.2*4}
 knitr::include_graphics("analysisOutputs/diagnostics/ccs_vr.png")
 ```
@@ -867,23 +909,38 @@ The condition:time interaction did not significantly add to the explained varian
 <!-- ``` -->
 
 
+
+### Presence & SOD
+
+```{r}
+
+lapply(presence.models, FUN = lmerTest:::summary.lmerModLmerTest)
+
+```
+
+```{r}
+
+lapply(sod.models, FUN = lmerTest:::summary.lmerModLmerTest)
+
+```
 # Export
 ## Tables for models
 
+
 First, we define a couple of helping functions
 ```{r}
-
+#lmermods = all.models
+#  x <- lmermods[[1]]
 
 make.x.table <- function(lmermods, save = TRUE, add = ""){
-  lapply(lmermods, function(x) formula(x)[2])
+  #lapply(lmermods, function(x) formula(x)[2])
   dvs <- as.character(lapply(lmermods, function(x) as.character(formula(x)[2])))
   iv <- sub("\\ .*", "", lmermods[[1]]@call$formula[3])
 
   
-  
   helpf <- function(x){
     # get fixed effects table
-    fix.temp <- round(as.data.frame(summary(x)$coefficients), 3)
+    fix.temp <- round(as.data.frame(lmerTest:::summary.lmerModLmerTest(x)$coefficients), 3)
 
     # calculate and round confidence intervals
     conf.temp <- as.data.frame(confint(x, method = "profile"))
@@ -899,7 +956,8 @@ make.x.table <- function(lmermods, save = TRUE, add = ""){
 
 
     fix.temp <- rownames_to_column(fix.temp, var = "Coef")
-    fix.temp <- fix.temp[, c(6, 1, 2, 5, 3, 4)]
+    fix.temp <- fix.temp[, c(8, 1, 2, 7, 5, 4, 6)]
+    colnames(fix.temp)[7] <- "p value"
 
 
     # return value
@@ -920,7 +978,7 @@ make.x.table <- function(lmermods, save = TRUE, add = ""){
   #cond <- toupper(strsplit(rownames(fixed.effects.df)[l.temp], split = " ")[[1]][5])
 
   rownames(fixed.effects.df) <- NULL
-  tabl <- xtable(fixed.effects.df[-6],
+  tabl <- xtable(fixed.effects.df,
                  caption = paste(toupper(iv), "Models",  add),
                  label = paste("tab:",add , iv, "-models", sep = ""))
 
@@ -945,13 +1003,13 @@ make.x.table <- function(lmermods, save = TRUE, add = ""){
 
 Then we create and save the tables: 
 ```{r}
-make.x.table(all.models, save = FALSE)
-make.x.table(vr.models, save = FALSE)
+make.x.table(all.models[-5], save = FALSE)
+make.x.table(vr.models[-5], save = FALSE)
 ```
 
 ```{r}
-make.x.table(all.models, save = TRUE)
-make.x.table(vr.models, save = TRUE)
+make.x.table(all.models[-5], save = TRUE)
+make.x.table(vr.models[-5], save = TRUE)
 ```
 
 
