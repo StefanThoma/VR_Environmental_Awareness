@@ -5,14 +5,16 @@ date: "3/10/2020"
 output:
   rmarkdown::github_document: default
   pdf_document: default
-  html_document: default
 ---
+
+
+
 
 # Setup
 
 Install / load packages needed:
 
-```{r setup, include=FALSE}
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 if (!require("pacman")) install.packages("pacman")
 p_load(tidyverse, lme4, lmerTest, mvoutlier, nlme, multcomp, lsmeans, xtable, jtools, tikzDevice, gmodels, parallel, performance, optimx, tidylog)
@@ -21,6 +23,9 @@ p_load(tidyverse, lme4, lmerTest, mvoutlier, nlme, multcomp, lsmeans, xtable, jt
 #ggplot <- function(...) ggplot2::ggplot(...) + scale_color_brewer(palette=jcolors::jcolors()) + scale_fill_brewer(palette=jcolors::jcolors()) + #ggplot2::scale_colour_brewer(palette=jcolors::jcolors()) + ggplot2::scale_color_discrete(palette=jcolors::jcolors()) #+ ggplot2::scale_fill_discrete(palette=jcolors::jcolors())
 ```
 
+```{r}
+sessionInfo()
+```
 ## Load Data
 ```{r load data}
 data <- read_csv("data/cleanData.csv") 
@@ -327,6 +332,39 @@ ipq_sod_plot <- ggplot(data = ipq_sod_plot_data, aes(x = VRE, y = value, color =
 
 ```
 
+## compare initial dv values
+Vector containing name of all dv's
+```{r}
+
+dvs <-  c("iat", "ccs", "nr", "nep", "env_pc")
+```
+
+Mean dvs at time point 1.
+```{r}
+data.dv1 <- data %>% filter(time==1) %>%
+dplyr::mutate(condition = ifelse(condition =="b", "real+",
+                              ifelse(condition == "c", "real-",
+                                  ifelse(condition == "a", "abstract", as.character(condition)))),
+              condition = as.factor(condition))
+(summar.cond <- data.dv1 %>% group_by(condition, type) %>%
+  summarise(mean_iat = mean(iat),
+            mean_ccs = mean(ccs),
+            mean_nr = mean(nr),
+            mean_nep = mean(nep)))
+
+(summar.vr <- data.dv1 %>% group_by(type) %>%
+  summarise(mean_iat = mean(iat),
+            mean_ccs = mean(ccs),
+            mean_nr = mean(nr),
+            mean_nep = mean(nep)))
+
+contrasts(data.dv1$condition) <- contr.sum(n = 6)
+contrasts(data.dv1$condition)
+lapply(dvs, function(x){
+  print(x)
+  summary(lm(get(x)~condition, data = data.dv1))
+})
+```
 
 
 # HLM 
@@ -416,10 +454,6 @@ fit_many <- function(pred.vector, dat, dv){
 
 
 
-Vector containing name of all dv's
-```{r}
-dvs <-  c("iat", "ccs", "nr", "nep", "env_pc")
-```
 
 
 
@@ -924,6 +958,17 @@ lapply(sod.models, FUN = lmerTest:::summary.lmerModLmerTest)
 
 ```
 # Export
+## Correlation table
+```{r}
+lower <- round(cor(data[dvs[-5]]),2)
+lower[upper.tri(lower)] <- ""
+lower <- as.data.frame(lower)
+rownames(lower) <- toupper(rownames(lower))
+colnames(lower) <- toupper(colnames(lower))
+print(xtable(lower, label = "tab:cortable", 
+       caption = "Correlation table of the four environmental attitudes measures. Computed on the untranformed CCS scale."), file = "analysisOutputs/tables/correlationtable.tex")
+```
+
 ## Tables for models
 
 
@@ -1264,6 +1309,8 @@ ci.plot <- function(colorby = "condition"){
 
       geom_errorbar(aes(ymin = df$`2.5 %`, ymax = df$`97.5 %`), position = "dodge2", width = 0.2) +
       ggthemes::theme_tufte() +
+      ylab("scale value") + 
+      
       scale_x_discrete() +
       xlim(c("before", "after"))
     }
@@ -1438,18 +1485,80 @@ onlyvr.cond.mean <- do.call("rbind", onlyvr.cond.mean.list)
 (cond.ci.plot <- ci.plot.condition(onlyvr.cond.mean))
 ```
 
+
+
+
+
+
+### backtransform ccs
+
+```{r}
+reverse <- function(lambda){
+  
+  function(x){
+    exp(log(lambda * x + 1) / lambda)
+  }
+}
+
+
+reverse_ccs <- reverse(lambda = lambda_ccs)
+```
+
+```{r}
+which.ccs <- which(onlyvr.cond.mean$dv=="ccs_bc")
+which.ccs2 <- which(vr.nonvr.mean$dv=="ccs_bc")
+
+vr.nonvr.mean2 <- vr.nonvr.mean
+vr.nonvr.mean2[which.ccs2,c("ml.value", "2.5 %","97.5 %")] <- reverse_ccs(vr.nonvr.mean[which.ccs2,c("ml.value", "2.5 %","97.5 %")] )
+
+
+onlyvr.cond.mean2 <- onlyvr.cond.mean
+onlyvr.cond.mean2[which.ccs,c("ml.value", "2.5 %","97.5 %")] <- reverse_ccs(onlyvr.cond.mean[which.ccs,c("ml.value", "2.5 %","97.5 %")] )
+  
+
+
+# change dv names:
+onlyvr.cond.mean2$dv[onlyvr.cond.mean2$dv=="ccs_bc"] <- "ccs"
+vr.nonvr.mean2$dv[vr.nonvr.mean2$dv=="ccs_bc"] <- "ccs"
+
+
+onlyvr.cond.mean2$dv <- toupper(onlyvr.cond.mean2$dv)
+vr.nonvr.mean2$dv   <- toupper(vr.nonvr.mean2$dv)
+
+# change condition names:
+onlyvr.cond.mean2 <-tibble( onlyvr.cond.mean2 ) %>% 
+  dplyr::mutate(condition = ifelse(condition =="b", "real+",
+                              ifelse(condition == "c", "real-",
+                                  ifelse(condition == "a", "abstract", condition))))
+```
+
+
+
+```{r}
+(cond.ci.plot2 <- ci.plot.condition(onlyvr.cond.mean2)+
+  guides(color=guide_legend(title="condition")))
+
+```
+```{r}
+(vr.ci.plot2 <- ci.plot.vr(vr.nonvr.mean2) +
+  guides(color=guide_legend(title="type")))
+```
+
+
+
 save plots
 ```{r}
-pdf(file = "analysisOutputs/plots/vr_ci_plot.pdf", width = 7, height = 5)
-vr.ci.plot
+pdf(file = "analysisOutputs/plots/vr_ci_plot2.pdf", width = 7, height = 5)
+vr.ci.plot2
 dev.off()
 ```
 
 ```{r}
-pdf(file = "analysisOutputs/plots/cond_ci_plot.pdf", width = 7, height = 5)
-cond.ci.plot
+pdf(file = "analysisOutputs/plots/cond_ci_plot2.pdf", width = 7, height = 5)
+cond.ci.plot2
 dev.off()
 ```
+
 <!-- ```{r} -->
 <!-- confint(vr.vs.nonvr.res[[3]]$fits$`nr ~ time + vr + time:vr + (1 | id) + (1 | condition)`) -->
 <!-- ``` -->

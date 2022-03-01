@@ -7,6 +7,77 @@ Stefan P. Thoma
 
 Install / load packages needed:
 
+``` r
+knitr::opts_chunk$set(echo = TRUE)
+if (!require("pacman")) install.packages("pacman")
+```
+
+    ## Loading required package: pacman
+
+``` r
+p_load(tidyverse, lme4, lmerTest, mvoutlier, nlme, multcomp, lsmeans, xtable, jtools, tikzDevice, gmodels, parallel, performance, optimx, tidylog)
+#pacman::p_load_gh("jaredhuling/jcolors")
+#jcolors::jcolors("default")
+#ggplot <- function(...) ggplot2::ggplot(...) + scale_color_brewer(palette=jcolors::jcolors()) + scale_fill_brewer(palette=jcolors::jcolors()) + #ggplot2::scale_colour_brewer(palette=jcolors::jcolors()) + ggplot2::scale_color_discrete(palette=jcolors::jcolors()) #+ ggplot2::scale_fill_discrete(palette=jcolors::jcolors())
+```
+
+``` r
+sessionInfo()
+```
+
+    ## R version 4.1.2 (2021-11-01)
+    ## Platform: x86_64-apple-darwin17.0 (64-bit)
+    ## Running under: macOS Big Sur 10.16
+    ## 
+    ## Matrix products: default
+    ## BLAS:   /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRblas.0.dylib
+    ## LAPACK: /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRlapack.dylib
+    ## 
+    ## locale:
+    ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+    ## 
+    ## attached base packages:
+    ## [1] parallel  stats     graphics  grDevices utils     datasets  methods  
+    ## [8] base     
+    ## 
+    ## other attached packages:
+    ##  [1] tidylog_1.0.2       optimx_2021-10.12   performance_0.8.0  
+    ##  [4] gmodels_2.18.1      tikzDevice_0.12.3.1 jtools_2.1.4       
+    ##  [7] xtable_1.8-4        lsmeans_2.30-0      emmeans_1.7.1-1    
+    ## [10] multcomp_1.4-17     TH.data_1.1-0       MASS_7.3-54        
+    ## [13] survival_3.2-13     mvtnorm_1.1-3       nlme_3.1-153       
+    ## [16] mvoutlier_2.1.1     sgeostat_1.0-27     lmerTest_3.1-3     
+    ## [19] lme4_1.1-27.1       Matrix_1.3-4        forcats_0.5.1      
+    ## [22] stringr_1.4.0       dplyr_1.0.7         purrr_0.3.4        
+    ## [25] readr_2.0.2         tidyr_1.1.4         tibble_3.1.6       
+    ## [28] ggplot2_3.3.5       tidyverse_1.3.1     pacman_0.5.1       
+    ## 
+    ## loaded via a namespace (and not attached):
+    ##  [1] fs_1.5.0            lubridate_1.8.0     insight_0.14.5     
+    ##  [4] httr_1.4.2          numDeriv_2016.8-1.1 tools_4.1.2        
+    ##  [7] backports_1.4.0     utf8_1.2.2          R6_2.5.1           
+    ## [10] DBI_1.1.1           colorspace_2.0-2    withr_2.4.3        
+    ## [13] tidyselect_1.1.1    compiler_4.1.2      cli_3.1.0          
+    ## [16] rvest_1.0.1         xml2_1.3.2          sandwich_3.0-1     
+    ## [19] scales_1.1.1        DEoptimR_1.0-9      robustbase_0.93-9  
+    ## [22] digest_0.6.29       minqa_1.2.4         rmarkdown_2.11     
+    ## [25] pkgconfig_2.0.3     htmltools_0.5.2     dbplyr_2.1.1       
+    ## [28] fastmap_1.1.0       rlang_0.4.12        readxl_1.3.1       
+    ## [31] rstudioapi_0.13     generics_0.1.1      zoo_1.8-9          
+    ## [34] jsonlite_1.7.2      gtools_3.9.2        magrittr_2.0.1     
+    ## [37] Rcpp_1.0.7          munsell_0.5.0       fansi_1.0.2        
+    ## [40] lifecycle_1.0.1     stringi_1.7.6       yaml_2.2.1         
+    ## [43] grid_4.1.2          gdata_2.18.0        crayon_1.4.2       
+    ## [46] lattice_0.20-45     haven_2.4.3         splines_4.1.2      
+    ## [49] pander_0.6.4        hms_1.1.1           knitr_1.37         
+    ## [52] pillar_1.6.4        boot_1.3-28         estimability_1.3   
+    ## [55] clisymbols_1.2.0    codetools_0.2-18    reprex_2.0.1       
+    ## [58] glue_1.6.0          evaluate_0.14       modelr_0.1.8       
+    ## [61] vctrs_0.3.8         nloptr_1.2.2.3      tzdb_0.1.2         
+    ## [64] cellranger_1.1.0    gtable_0.3.0        assertthat_0.2.1   
+    ## [67] xfun_0.29           broom_0.7.10        coda_0.19-4        
+    ## [70] filehash_2.4-2      ellipsis_0.3.2
+
 ## Load Data
 
 ``` r
@@ -233,13 +304,49 @@ psych::omega(data[vars.list1[[3]]], nfactors = 1)
 
 Omega Total 0.71 seems ok.
 
+### Check NEP structure
+
+``` r
+psych::principal(r = data[nep.vars[-length(nep.vars)]])
+```
+
+    ## Principal Components Analysis
+    ## Call: psych::principal(r = data[nep.vars[-length(nep.vars)]])
+    ## Standardized loadings (pattern matrix) based upon correlation matrix
+    ##        PC1    h2   u2 com
+    ## nep1  0.38 0.146 0.85   1
+    ## nep2  0.46 0.209 0.79   1
+    ## nep3  0.65 0.418 0.58   1
+    ## nep4  0.52 0.273 0.73   1
+    ## nep5  0.60 0.365 0.63   1
+    ## nep6  0.21 0.045 0.95   1
+    ## nep7  0.48 0.230 0.77   1
+    ## nep8  0.27 0.071 0.93   1
+    ## nep9  0.11 0.012 0.99   1
+    ## nep10 0.52 0.275 0.72   1
+    ## nep11 0.34 0.114 0.89   1
+    ## nep12 0.55 0.297 0.70   1
+    ## nep13 0.36 0.128 0.87   1
+    ## nep14 0.39 0.155 0.84   1
+    ## nep15 0.62 0.384 0.62   1
+    ## 
+    ##                 PC1
+    ## SS loadings    3.13
+    ## Proportion Var 0.21
+    ## 
+    ## Mean item complexity =  1
+    ## Test of the hypothesis that 1 component is sufficient.
+    ## 
+    ## The root mean square of the residuals (RMSR) is  0.1 
+    ##  with the empirical chi square  583.99  with prob <  2e-73 
+    ## 
+    ## Fit based upon off diagonal values = 0.68
+
 For the following analysis we reduce the dataframe.
 
 ``` r
 data <- data %>% dplyr::select(
-  id, time, vr, type, condition, iat, ccs, nr, nep, ipq, sod, ses, age, edu, sex, pol, vr_exp, vr_eval1, vr_eval2, vr_eval3,
-  
-  vr_eval4, vr_eval5, span, seen, starts_with("Frage"), hr_mean, Leiter, Anmerkungen, Zeit
+  id, time, vr, type, condition, iat, ccs, nr, nep, ipq, sod, ses, age, edu, sex, pol, vr_exp, vr_eval1, vr_eval2, vr_eval3, vr_eval4, vr_eval5, span, seen, starts_with("Frage"), hr_mean, Leiter, Anmerkungen, Zeit
 )
 ```
 
@@ -255,7 +362,7 @@ df_env <- data[c("iat", "ccs", "nr", "nep")]
 psych::fa.parallel(df_env)
 ```
 
-![](analysis_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
     ## Parallel analysis suggests that the number of factors =  1  and the number of components =  1
 
@@ -316,9 +423,9 @@ desc_plot_data <- gather(data, specific, value, vars) %>%
                                ifelse(specific=="vr_eval3", "pleasant",
                                       ifelse(specific=="vr_eval4", "realistic", 
                                              ifelse(specific=="vr_eval5", "enjoyment", specific))))),
-         VRE = ifelse(condition == "b", "R+",
-                      ifelse(condition=="c", "R-",
-                             ifelse(condition=="a", "A+", condition)))) %>%
+         VRE = ifelse(condition == "b", "Real+",
+                      ifelse(condition=="c", "Real-",
+                             ifelse(condition=="a", "Abstract", as.character(condition))))) %>%
   dplyr::select(specific, value, id, VRE)
 ```
 
@@ -338,53 +445,236 @@ desc_plot_data <- gather(data, specific, value, vars) %>%
   facet_wrap( ~specific, nrow = 2)+
   geom_violin(draw_quantiles = .5) + #, position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0, jitter.height = 0))+
   geom_point(alpha = .3, position = "jitter")+#, position = position_jitterdodge(dodge.width = 0, jitter.width = .2, jitter.height = .3)) +
-  ggthemes::theme_tufte() +
+  ggthemes::theme_few() +
   ylab("value") +
-  xlab("question")+
-  #labs(title="Evaluation of Virtual Environments")+
+  xlab("")+
+ # labs(title="")+    
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())+
+
   scale_y_continuous(breaks = c(1,3,5,7)) +
-  theme(legend.position = "bottom") )
+  theme(legend.position = "right") )
 ```
 
     ## Warning: Removed 304 rows containing non-finite values (stat_ydensity).
 
     ## Warning: Removed 304 rows containing missing values (geom_point).
 
-![](analysis_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+ipq and sod separately:
+
+## compare initial dv values
+
+Vector containing name of all dv’s
 
 ``` r
-ipq_sod_plot_data <- gather(data, scale, value, c("ipq", "sod")) %>%
-  filter(time==1, condition %in% c("a", "b", "c", "video")) %>%
-  arrange(id, scale) %>%
-  mutate(VRE = ifelse(condition == "b", "R+",
-                      ifelse(condition=="c", "R-", 
-                             ifelse(condition == "a", "A+", condition)))) %>%
-  dplyr::select(scale, value, id, VRE)
+dvs <-  c("iat", "ccs", "nr", "nep", "env_pc")
 ```
 
-    ## gather: reorganized (ipq, sod) into (scale, value) [was 284x32, now 568x32]
-
-    ## filter: removed 382 rows (67%), 186 rows remaining
-
-    ## mutate: new variable 'VRE' (character) with 4 unique values and 0% NA
+Mean dvs at time point 1.
 
 ``` r
-ipq_sod_plot <- ggplot(data = ipq_sod_plot_data, aes(x = VRE, y = value, color = VRE)) +
-  facet_wrap(~scale, ncol = 2)+
-  geom_violin(draw_quantiles = .5, position = position_jitterdodge(dodge.width = 0.8, jitter.width = 0, jitter.height = 0))+
-  geom_point(alpha = .3, position = position_jitterdodge(dodge.width = 0.8, jitter.width = .2, jitter.height = .1)) +
-  ggthemes::theme_tufte() +
-  ylab("scores") +
-  xlab("scale")+
-  #labs(title="Presence (IPQ) and Suspension of Disbelief (SOD)")+
-  scale_y_continuous(breaks = c(1,3,5,7), limits = c(1,7)); ipq_sod_plot
+data.dv1 <- data %>% filter(time==1) %>%
+dplyr::mutate(condition = ifelse(condition =="b", "real+",
+                              ifelse(condition == "c", "real-",
+                                  ifelse(condition == "a", "abstract", as.character(condition)))),
+              condition = as.factor(condition))
 ```
 
-    ## Warning: Removed 4 rows containing non-finite values (stat_ydensity).
+    ## filter: removed 142 rows (50%), 142 rows remaining
 
-    ## Warning: Removed 4 rows containing missing values (geom_point).
+``` r
+(summar.cond <- data.dv1 %>% group_by(condition, type) %>%
+  summarise(mean_iat = mean(iat),
+            mean_ccs = mean(ccs),
+            mean_nr = mean(nr),
+            mean_nep = mean(nep)))
+```
 
-![](analysis_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
+    ## group_by: 2 grouping variables (condition, type)
+
+    ## summarise: now 6 rows and 6 columns, one group variable remaining (condition)
+
+    ## # A tibble: 6 × 6
+    ## # Groups:   condition [6]
+    ##   condition type    mean_iat mean_ccs mean_nr mean_nep
+    ##   <fct>     <fct>      <dbl>    <dbl>   <dbl>    <dbl>
+    ## 1 abstract  vr       -0.0430     1.5     3.63     3.79
+    ## 2 real-     vr        0.309      1.51    4.02     3.86
+    ## 3 real+     vr        0.165      1.35    3.99     3.79
+    ## 4 text      control   0.355      1.47    3.77     3.83
+    ## 5 text.bild control   0.233      1.42    3.83     3.87
+    ## 6 video     control   0.306      1.48    3.89     3.84
+
+``` r
+(summar.vr <- data.dv1 %>% group_by(type) %>%
+  summarise(mean_iat = mean(iat),
+            mean_ccs = mean(ccs),
+            mean_nr = mean(nr),
+            mean_nep = mean(nep)))
+```
+
+    ## group_by: one grouping variable (type)
+
+    ## summarise: now 2 rows and 5 columns, ungrouped
+
+    ## # A tibble: 2 × 5
+    ##   type    mean_iat mean_ccs mean_nr mean_nep
+    ##   <fct>      <dbl>    <dbl>   <dbl>    <dbl>
+    ## 1 vr         0.144     1.45    3.88     3.81
+    ## 2 control    0.299     1.46    3.83     3.85
+
+``` r
+contrasts(data.dv1$condition) <- contr.sum(n = 6)
+contrasts(data.dv1$condition)
+```
+
+    ##           [,1] [,2] [,3] [,4] [,5]
+    ## abstract     1    0    0    0    0
+    ## real-        0    1    0    0    0
+    ## real+        0    0    1    0    0
+    ## text         0    0    0    1    0
+    ## text.bild    0    0    0    0    1
+    ## video       -1   -1   -1   -1   -1
+
+``` r
+lapply(dvs, function(x){
+  print(x)
+  summary(lm(get(x)~condition, data = data.dv1))
+})
+```
+
+    ## [1] "iat"
+    ## [1] "ccs"
+    ## [1] "nr"
+    ## [1] "nep"
+    ## [1] "env_pc"
+
+    ## [[1]]
+    ## 
+    ## Call:
+    ## lm(formula = get(x) ~ condition, data = data.dv1)
+    ## 
+    ## Residuals:
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1.10154 -0.28834 -0.00615  0.30680  0.94134 
+    ## 
+    ## Coefficients:
+    ##             Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)  0.22074    0.03689   5.984 1.82e-08 ***
+    ## condition1  -0.26378    0.08340  -3.163  0.00193 ** 
+    ## condition2   0.08793    0.08340   1.054  0.29356    
+    ## condition3  -0.05547    0.08340  -0.665  0.50711    
+    ## condition4   0.13378    0.08067   1.658  0.09955 .  
+    ## condition5   0.01189    0.08199   0.145  0.88487    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.4393 on 136 degrees of freedom
+    ## Multiple R-squared:  0.08616,    Adjusted R-squared:  0.05256 
+    ## F-statistic: 2.565 on 5 and 136 DF,  p-value: 0.02985
+    ## 
+    ## 
+    ## [[2]]
+    ## 
+    ## Call:
+    ## lm(formula = get(x) ~ condition, data = data.dv1)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -0.5109 -0.3359 -0.1458  0.1814  1.7500 
+    ## 
+    ## Coefficients:
+    ##             Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)  1.45522    0.04003  36.349   <2e-16 ***
+    ## condition1   0.04478    0.09052   0.495    0.622    
+    ## condition2   0.05565    0.09052   0.615    0.540    
+    ## condition3  -0.10740    0.09052  -1.186    0.237    
+    ## condition4   0.01811    0.08756   0.207    0.836    
+    ## condition5  -0.03508    0.08899  -0.394    0.694    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.4768 on 136 degrees of freedom
+    ## Multiple R-squared:  0.01384,    Adjusted R-squared:  -0.02241 
+    ## F-statistic: 0.3819 on 5 and 136 DF,  p-value: 0.8605
+    ## 
+    ## 
+    ## [[3]]
+    ## 
+    ## Call:
+    ## lm(formula = get(x) ~ condition, data = data.dv1)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -1.8610 -0.2856  0.0119  0.3534  0.9962 
+    ## 
+    ## Coefficients:
+    ##             Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)  3.85568    0.04060  94.975   <2e-16 ***
+    ## condition1  -0.22421    0.09179  -2.443   0.0159 *  
+    ## condition2   0.16917    0.09179   1.843   0.0675 .  
+    ## condition3   0.13811    0.09179   1.505   0.1347    
+    ## condition4  -0.08996    0.08879  -1.013   0.3127    
+    ## condition5  -0.03028    0.09024  -0.336   0.7377    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.4835 on 136 degrees of freedom
+    ## Multiple R-squared:  0.07317,    Adjusted R-squared:  0.0391 
+    ## F-statistic: 2.147 on 5 and 136 DF,  p-value: 0.06351
+    ## 
+    ## 
+    ## [[4]]
+    ## 
+    ## Call:
+    ## lm(formula = get(x) ~ condition, data = data.dv1)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -1.3600 -0.2580  0.0058  0.2675  0.9478 
+    ## 
+    ## Coefficients:
+    ##             Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)  3.82973    0.03525 108.653   <2e-16 ***
+    ## condition1  -0.04422    0.07969  -0.555    0.580    
+    ## condition2   0.03404    0.07969   0.427    0.670    
+    ## condition3  -0.03842    0.07969  -0.482    0.630    
+    ## condition4  -0.00306    0.07709  -0.040    0.968    
+    ## condition5   0.04250    0.07835   0.542    0.588    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.4198 on 136 degrees of freedom
+    ## Multiple R-squared:  0.006267,   Adjusted R-squared:  -0.03027 
+    ## F-statistic: 0.1715 on 5 and 136 DF,  p-value: 0.9728
+    ## 
+    ## 
+    ## [[5]]
+    ## 
+    ## Call:
+    ## lm(formula = get(x) ~ condition, data = data.dv1)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -4.6228 -0.7179  0.1753  0.7888  2.5123 
+    ## 
+    ## Coefficients:
+    ##             Estimate Std. Error t value Pr(>|t|)  
+    ## (Intercept) -0.07852    0.10223  -0.768   0.4438  
+    ## condition1  -0.50214    0.23114  -2.172   0.0316 *
+    ## condition2   0.21738    0.23114   0.940   0.3487  
+    ## condition3   0.16514    0.23114   0.714   0.4762  
+    ## condition4  -0.03430    0.22358  -0.153   0.8783  
+    ## condition5   0.07576    0.22724   0.333   0.7393  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 1.218 on 136 degrees of freedom
+    ## Multiple R-squared:  0.03737,    Adjusted R-squared:  0.001976 
+    ## F-statistic: 1.056 on 5 and 136 DF,  p-value: 0.3878
 
 # HLM
 
@@ -465,12 +755,6 @@ fit_many <- function(pred.vector, dat, dv){
 }
 ```
 
-Vector containing name of all dv’s
-
-``` r
-dvs <-  c("iat", "ccs", "nr", "nep", "env_pc")
-```
-
 ``` r
 # split data frame:
 data.vr <- data %>% dplyr::filter(vr) 
@@ -497,34 +781,34 @@ vr.models <- lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors.vr
 ```
 
     ## iat ~ condition * time + (time | id)
-    ## <environment: 0x7fa55e6d0070>
+    ## <environment: 0x7fc2d728d790>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## iat ~ condition * time + (1 | id)
-    ## <environment: 0x7fa55e3c7468>
+    ## <environment: 0x7fc302d4b9a8>
     ## [1] "is model singular:  FALSE"
     ## ccs ~ condition * time + (time | id)
-    ## <environment: 0x7fa5aa4de0f8>
+    ## <environment: 0x7fc300c72e80>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## ccs ~ condition * time + (1 | id)
-    ## <environment: 0x7fa5aa85bd28>
+    ## <environment: 0x7fc30091cf98>
     ## [1] "is model singular:  FALSE"
     ## nr ~ condition * time + (time | id)
-    ## <environment: 0x7fa54efe1ed0>
+    ## <environment: 0x7fc304902520>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## nr ~ condition * time + (1 | id)
-    ## <environment: 0x7fa549de7a58>
+    ## <environment: 0x7fc3038fa2f0>
     ## [1] "is model singular:  FALSE"
     ## nep ~ condition * time + (time | id)
-    ## <environment: 0x7fa538179e08>
+    ## <environment: 0x7fc301ffb3e0>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## nep ~ condition * time + (1 | id)
-    ## <environment: 0x7fa538424c80>
+    ## <environment: 0x7fc3521da060>
     ## [1] "is model singular:  FALSE"
     ## env_pc ~ condition * time + (time | id)
-    ## <environment: 0x7fa53804dbd8>
+    ## <environment: 0x7fc352bce680>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## env_pc ~ condition * time + (1 | id)
-    ## <environment: 0x7fa538b47270>
+    ## <environment: 0x7fc352e24450>
     ## [1] "is model singular:  FALSE"
 
 ``` r
@@ -532,54 +816,94 @@ all.models  <-  lapply(dvs, FUN = function(dv) fit_many(pred.vector = predictors
 ```
 
     ## iat ~ time * type + (time | condition) + (1 | id)
-    ## <environment: 0x7fa53cd08e48>
+    ## <environment: 0x7fc3443c1b58>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## iat ~ time * type + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa53d04b510>
+    ## <environment: 0x7fc33573e2d8>
     ## [1] "is model singular:  FALSE"
     ## ccs ~ time * type + (time | condition) + (1 | id)
-    ## <environment: 0x7fa5490d8b68>
+    ## <environment: 0x7fc3316374b8>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## ccs ~ time * type + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa53e1d3d98>
+    ## <environment: 0x7fc334ae76c0>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## ccs ~ time * type + (1 | id)
-    ## <environment: 0x7fa53a0b1190>
+    ## <environment: 0x7fc333483e20>
     ## [1] "is model singular:  FALSE"
     ## nr ~ time * type + (time | condition) + (1 | id)
-    ## <environment: 0x7fa52f530008>
+    ## <environment: 0x7fc331b93aa0>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## nr ~ time * type + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa52e765548>
+    ## <environment: 0x7fc3309c20f8>
     ## [1] "is model singular:  FALSE"
     ## nep ~ time * type + (time | condition) + (1 | id)
-    ## <environment: 0x7fa53a8c7a70>
+    ## <environment: 0x7fc311a3c7a8>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## nep ~ time * type + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa54996aeb8>
+    ## <environment: 0x7fc332e05428>
     ## [1] "is model singular:  FALSE"
     ## env_pc ~ time * type + (time | condition) + (1 | id)
-    ## <environment: 0x7fa5487b0308>
+    ## <environment: 0x7fc3053ca040>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## env_pc ~ time * type + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa53be1bbf0>
+    ## <environment: 0x7fc300616d10>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## env_pc ~ time * type + (1 | id)
-    ## <environment: 0x7fa5482ad878>
+    ## <environment: 0x7fc350f13218>
+    ## [1] "is model singular:  FALSE"
+
+``` r
+presence.models <- lapply(dvs, FUN = function(dv) fit_many(pred.vector = "ipq * time + (1 | id)", dat = data.vr, dv = dv))
+```
+
+    ## iat ~ ipq * time + (1 | id)
+    ## <environment: 0x7fc350b8fdf0>
+    ## [1] "is model singular:  FALSE"
+    ## ccs ~ ipq * time + (1 | id)
+    ## <environment: 0x7fc3057cffe8>
+    ## [1] "is model singular:  FALSE"
+    ## nr ~ ipq * time + (1 | id)
+    ## <environment: 0x7fc344ce2ee0>
+    ## [1] "is model singular:  FALSE"
+    ## nep ~ ipq * time + (1 | id)
+    ## <environment: 0x7fc344f95c08>
+    ## [1] "is model singular:  FALSE"
+    ## env_pc ~ ipq * time + (1 | id)
+    ## <environment: 0x7fc3011749b0>
+    ## [1] "is model singular:  FALSE"
+
+``` r
+sod.models <- lapply(dvs, FUN = function(dv) fit_many(pred.vector = "sod * time + (1 | id)", dat = data.vr, dv = dv))
+```
+
+    ## iat ~ sod * time + (1 | id)
+    ## <environment: 0x7fc34527a950>
+    ## [1] "is model singular:  FALSE"
+    ## ccs ~ sod * time + (1 | id)
+    ## <environment: 0x7fc2d6f4ce78>
+    ## [1] "is model singular:  FALSE"
+    ## nr ~ sod * time + (1 | id)
+    ## <environment: 0x7fc34562d680>
+    ## [1] "is model singular:  FALSE"
+    ## nep ~ sod * time + (1 | id)
+    ## <environment: 0x7fc345646758>
+    ## [1] "is model singular:  FALSE"
+    ## env_pc ~ sod * time + (1 | id)
+    ## <environment: 0x7fc3139652e0>
     ## [1] "is model singular:  FALSE"
 
 <!-- ```{r, include = FALSE} -->
@@ -680,6 +1004,28 @@ Homogeneity of variance seems acceptable. Random effects appear normal.
 
 ### CCS
 
+First some descriptives about ccs.
+
+``` r
+data %>% group_by(as.factor(time)) %>%
+  summarise(mean = mean(ccs),
+            range = range(ccs), 
+            median = median(ccs))
+```
+
+    ## group_by: one grouping variable (as.factor(time))
+
+    ## summarise: now 4 rows and 4 columns, one group variable remaining (as.factor(time))
+
+    ## # A tibble: 4 × 4
+    ## # Groups:   as.factor(time) [2]
+    ##   `as.factor(time)`  mean range median
+    ##   <fct>             <dbl> <dbl>  <dbl>
+    ## 1 1                  1.46  1      1.33
+    ## 2 1                  1.46  3.25   1.33
+    ## 3 2                  1.44  1      1.29
+    ## 4 2                  1.44  3.83   1.29
+
 <div class="figure" style="text-align: center">
 
 <img src="analysisOutputs/diagnostics/ccs_vr.png" alt="ccs_vr_diagnostics" width="1050" />
@@ -707,7 +1053,7 @@ Maybe a boxcox transformation may help:
 bc <- boxcox(ccs ~ vr * time, data = data)
 ```
 
-![](analysis_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 ``` r
 lambda_ccs <- bc$x[which.max(bc$y)]
@@ -725,24 +1071,24 @@ all.ccs2 <- fit_many(pred.vector = predictors.all, dat = data, dv = "ccs_bc")
 ```
 
     ## ccs_bc ~ time * type + (time | condition) + (1 | id)
-    ## <environment: 0x7fa539b9ee90>
+    ## <environment: 0x7fc303711698>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## ccs_bc ~ time * type + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa53f62c388>
+    ## <environment: 0x7fc3353f9820>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## ccs_bc ~ time * type + (1 | id)
-    ## <environment: 0x7fa558bf0748>
+    ## <environment: 0x7fc3379586a0>
     ## [1] "is model singular:  FALSE"
 
 ``` r
 performance::check_model(all.ccs2)
 ```
 
-![](analysis_files/figure-gfm/unnamed-chunk-21-2.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-28-2.png)<!-- -->
 
 The situation has improved! All model assumptions appear plausible.
 
@@ -775,17 +1121,17 @@ vr.ccs2 <- fit_many(pred.vector = predictors.vr, dat = data.vr, dv = "ccs_bc")
 ```
 
     ## ccs_bc ~ condition * time + (time | id)
-    ## <environment: 0x7fa54be8ac90>
+    ## <environment: 0x7fc3037604b8>
     ## Error : number of observations (=138) <= number of random effects (=138) for term (time | id); the random-effects parameters and the residual variance (or scale parameter) are probably unidentifiable
     ## ccs_bc ~ condition * time + (1 | id)
-    ## <environment: 0x7fa54c9006c0>
+    ## <environment: 0x7fc2d7cbd3c0>
     ## [1] "is model singular:  FALSE"
 
 ``` r
 performance::check_model(vr.ccs2)
 ```
 
-![](analysis_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 ``` r
 vr.models[[2]] <- vr.ccs2
@@ -850,7 +1196,7 @@ data$env_pc2 <- data$env_pc + 6
 bc <- boxcox(env_pc2 ~ vr * time, data = data)
 ```
 
-![](analysis_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
 
 ``` r
 lambda_pc <- bc$x[which.max(bc$y)]
@@ -868,24 +1214,24 @@ all.env_pc2 <- fit_many(pred.vector = predictors.all, dat = data, dv = "env_pc_b
 ```
 
     ## env_pc_bc ~ time * type + (time | condition) + (1 | id)
-    ## <environment: 0x7fa53f6d57a8>
+    ## <environment: 0x7fc34329f3e8>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## env_pc_bc ~ time * type + (-1 + time | condition) + (1 | id)
-    ## <environment: 0x7fa53f7535c8>
+    ## <environment: 0x7fc34514bc80>
 
     ## boundary (singular) fit: see ?isSingular
 
     ## env_pc_bc ~ time * type + (1 | id)
-    ## <environment: 0x7fa558ef5270>
+    ## <environment: 0x7fc335446460>
     ## [1] "is model singular:  FALSE"
 
 ``` r
 performance::check_model(all.env_pc2)
 ```
 
-![](analysis_files/figure-gfm/unnamed-chunk-29-2.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-36-2.png)<!-- -->
 
 Transformation does not help much here. Lets not do it.
 
@@ -942,6 +1288,260 @@ lapply(all.models, FUN = plot_diagn)
 ## Inference
 
 ### vr vs control
+
+``` r
+lapply(all.models, FUN = lmerTest:::summary.lmerModLmerTest)
+```
+
+    ## Coercing object to class 'lmerModLmerTest'
+    ## Coercing object to class 'lmerModLmerTest'
+    ## Coercing object to class 'lmerModLmerTest'
+    ## Coercing object to class 'lmerModLmerTest'
+    ## Coercing object to class 'lmerModLmerTest'
+
+    ## [[1]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: iat ~ time * type + (-1 + time | condition) + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 315.2
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -3.00917 -0.60925  0.02082  0.59421  2.05824 
+    ## 
+    ## Random effects:
+    ##  Groups    Name        Variance Std.Dev.
+    ##  id        (Intercept) 0.098991 0.31463 
+    ##  condition time        0.002013 0.04486 
+    ##  Residual              0.094707 0.30775 
+    ## Number of obs: 284, groups:  id, 142; condition, 6
+    ## 
+    ## Fixed effects:
+    ##               Estimate Std. Error         df t value Pr(>|t|)    
+    ## (Intercept)   0.230413   0.063522 225.155717   3.627 0.000354 ***
+    ## time         -0.009332   0.040871  20.397083  -0.228 0.821660    
+    ## type1        -0.152101   0.063522 225.155717  -2.394 0.017465 *  
+    ## time:type1    0.074652   0.040871  20.397083   1.827 0.082445 .  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Correlation of Fixed Effects:
+    ##            (Intr) time   type1 
+    ## time       -0.771              
+    ## type1       0.028 -0.022       
+    ## time:type1 -0.022  0.022 -0.771
+    ## 
+    ## [[2]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: ccs_bc ~ time * type + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: -349
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -2.33016 -0.44377 -0.04596  0.56783  2.12335 
+    ## 
+    ## Random effects:
+    ##  Groups   Name        Variance Std.Dev.
+    ##  id       (Intercept) 0.018962 0.13770 
+    ##  Residual             0.005645 0.07513 
+    ## Number of obs: 284, groups:  id, 142
+    ## 
+    ## Fixed effects:
+    ##               Estimate Std. Error         df t value Pr(>|t|)    
+    ## (Intercept)   0.234121   0.018236 278.363626  12.838   <2e-16 ***
+    ## time         -0.011764   0.008920 140.000003  -1.319    0.189    
+    ## type1        -0.002096   0.018236 278.363626  -0.115    0.909    
+    ## time:type1   -0.002811   0.008920 140.000003  -0.315    0.753    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Correlation of Fixed Effects:
+    ##            (Intr) time   type1 
+    ## time       -0.734              
+    ## type1       0.028 -0.021       
+    ## time:type1 -0.021  0.028 -0.734
+    ## 
+    ## [[3]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: nr ~ time * type + (-1 + time | condition) + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 265.4
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -2.59554 -0.44842  0.02171  0.48568  1.76425 
+    ## 
+    ## Random effects:
+    ##  Groups    Name        Variance  Std.Dev.
+    ##  id        (Intercept) 0.2263312 0.47574 
+    ##  condition time        0.0003591 0.01895 
+    ##  Residual              0.0400008 0.20000 
+    ## Number of obs: 284, groups:  id, 142; condition, 6
+    ## 
+    ## Fixed effects:
+    ##              Estimate Std. Error        df t value Pr(>|t|)    
+    ## (Intercept)   3.81760    0.05482 268.09998  69.644   <2e-16 ***
+    ## time          0.03769    0.02497   9.57301   1.509    0.164    
+    ## type1        -0.01084    0.05482 268.09998  -0.198    0.843    
+    ## time:type1    0.03891    0.02497   9.57301   1.558    0.152    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Correlation of Fixed Effects:
+    ##            (Intr) time   type1 
+    ## time       -0.618              
+    ## type1       0.028 -0.017       
+    ## time:type1 -0.017  0.025 -0.618
+    ## 
+    ## [[4]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: nep ~ time * type + (-1 + time | condition) + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 187.5
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -2.13567 -0.52383 -0.01767  0.49178  2.18200 
+    ## 
+    ## Random effects:
+    ##  Groups    Name        Variance  Std.Dev.
+    ##  id        (Intercept) 0.1427876 0.37787 
+    ##  condition time        0.0001482 0.01217 
+    ##  Residual              0.0352898 0.18786 
+    ## Number of obs: 284, groups:  id, 142; condition, 6
+    ## 
+    ## Fixed effects:
+    ##              Estimate Std. Error        df t value Pr(>|t|)    
+    ## (Intercept)   3.75582    0.04743 276.21351  79.181  < 2e-16 ***
+    ## time          0.07381    0.02285  14.88848   3.230  0.00565 ** 
+    ## type1        -0.03505    0.04743 276.21351  -0.739  0.46061    
+    ## time:type1    0.01894    0.02285  14.88848   0.829  0.42021    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Correlation of Fixed Effects:
+    ##            (Intr) time   type1 
+    ## time       -0.688              
+    ## type1       0.028 -0.019       
+    ## time:type1 -0.019  0.027 -0.688
+    ## 
+    ## [[5]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: env_pc ~ time * type + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 769
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -2.33852 -0.41115  0.01461  0.44995  1.90160 
+    ## 
+    ## Random effects:
+    ##  Groups   Name        Variance Std.Dev.
+    ##  id       (Intercept) 1.4722   1.2133  
+    ##  Residual             0.2278   0.4773  
+    ## Number of obs: 284, groups:  id, 142
+    ## 
+    ## Fixed effects:
+    ##              Estimate Std. Error        df t value Pr(>|t|)   
+    ## (Intercept)  -0.23777    0.13566 267.65387  -1.753  0.08081 . 
+    ## time          0.15874    0.05667 140.00000   2.801  0.00581 **
+    ## type1        -0.14234    0.13566 267.65387  -1.049  0.29502   
+    ## time:type1    0.10297    0.05667 140.00000   1.817  0.07134 . 
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Correlation of Fixed Effects:
+    ##            (Intr) time   type1 
+    ## time       -0.627              
+    ## type1       0.028 -0.018       
+    ## time:type1 -0.018  0.028 -0.627
+
+Follow up tests:
+
+``` r
+# iat
+contrast( emmeans(all.models[[1]],  ~ time | type))
+```
+
+    ## type = vr:
+    ##  contrast estimate     SE   df t.ratio p.value
+    ##  1 effect  -0.0327 0.0292 23.0  -1.118  0.2753
+    ##  2 effect   0.0327 0.0292 23.0   1.118  0.2753
+    ## 
+    ## type = control:
+    ##  contrast estimate     SE   df t.ratio p.value
+    ##  1 effect   0.0420 0.0286 21.2   1.470  0.1563
+    ##  2 effect  -0.0420 0.0286 21.2  -1.470  0.1563
+    ## 
+    ## Degrees-of-freedom method: kenward-roger 
+    ## P value adjustment: fdr method for 2 tests
+
+``` r
+# ccs
+contrast( emmeans(all.models[[2]],  ~ time | type))
+```
+
+    ## type = vr:
+    ##  contrast estimate      SE  df t.ratio p.value
+    ##  1 effect  0.00729 0.00640 140   1.139  0.2565
+    ##  2 effect -0.00729 0.00640 140  -1.139  0.2565
+    ## 
+    ## type = control:
+    ##  contrast estimate      SE  df t.ratio p.value
+    ##  1 effect  0.00448 0.00622 140   0.720  0.4728
+    ##  2 effect -0.00448 0.00622 140  -0.720  0.4728
+    ## 
+    ## Degrees-of-freedom method: kenward-roger 
+    ## P value adjustment: fdr method for 2 tests
+
+``` r
+# nr
+contrast( emmeans(all.models[[3]],  ~ time | type))
+```
+
+    ## type = vr:
+    ##  contrast  estimate     SE    df t.ratio p.value
+    ##  1 effect -0.038302 0.0179 10.66  -2.142  0.0562
+    ##  2 effect  0.038302 0.0179 10.66   2.142  0.0562
+    ## 
+    ## type = control:
+    ##  contrast  estimate     SE    df t.ratio p.value
+    ##  1 effect  0.000613 0.0174  9.67   0.035  0.9727
+    ##  2 effect -0.000613 0.0174  9.67  -0.035  0.9727
+    ## 
+    ## Degrees-of-freedom method: kenward-roger 
+    ## P value adjustment: fdr method for 2 tests
+
+``` r
+# nep
+contrast( emmeans(all.models[[4]],  ~ time | type))
+```
+
+    ## type = vr:
+    ##  contrast estimate     SE   df t.ratio p.value
+    ##  1 effect  -0.0464 0.0164 14.4  -2.833  0.0130
+    ##  2 effect   0.0464 0.0164 14.4   2.833  0.0130
+    ## 
+    ## type = control:
+    ##  contrast estimate     SE   df t.ratio p.value
+    ##  1 effect  -0.0274 0.0159 13.0  -1.721  0.1090
+    ##  2 effect   0.0274 0.0159 13.0   1.721  0.1090
+    ## 
+    ## Degrees-of-freedom method: kenward-roger 
+    ## P value adjustment: fdr method for 2 tests
+
+### Within the VEs (condition)
 
 ``` r
 lapply(vr.models, FUN = lmerTest:::summary.lmerModLmerTest)
@@ -1230,260 +1830,6 @@ contrast( emmeans(vr.models[[4]],  ~ time | condition))
     ## Degrees-of-freedom method: kenward-roger 
     ## P value adjustment: fdr method for 2 tests
 
-### Within the VEs (condition)
-
-``` r
-lapply(all.models, FUN = lmerTest:::summary.lmerModLmerTest)
-```
-
-    ## Coercing object to class 'lmerModLmerTest'
-    ## Coercing object to class 'lmerModLmerTest'
-    ## Coercing object to class 'lmerModLmerTest'
-    ## Coercing object to class 'lmerModLmerTest'
-    ## Coercing object to class 'lmerModLmerTest'
-
-    ## [[1]]
-    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-    ## lmerModLmerTest]
-    ## Formula: iat ~ time * type + (-1 + time | condition) + (1 | id)
-    ##    Data: dat
-    ## 
-    ## REML criterion at convergence: 315.2
-    ## 
-    ## Scaled residuals: 
-    ##      Min       1Q   Median       3Q      Max 
-    ## -3.00917 -0.60925  0.02082  0.59421  2.05824 
-    ## 
-    ## Random effects:
-    ##  Groups    Name        Variance Std.Dev.
-    ##  id        (Intercept) 0.098991 0.31463 
-    ##  condition time        0.002013 0.04486 
-    ##  Residual              0.094707 0.30775 
-    ## Number of obs: 284, groups:  id, 142; condition, 6
-    ## 
-    ## Fixed effects:
-    ##               Estimate Std. Error         df t value Pr(>|t|)    
-    ## (Intercept)   0.230413   0.063522 225.155717   3.627 0.000354 ***
-    ## time         -0.009332   0.040871  20.397083  -0.228 0.821660    
-    ## type1        -0.152101   0.063522 225.155717  -2.394 0.017465 *  
-    ## time:type1    0.074652   0.040871  20.397083   1.827 0.082445 .  
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Correlation of Fixed Effects:
-    ##            (Intr) time   type1 
-    ## time       -0.771              
-    ## type1       0.028 -0.022       
-    ## time:type1 -0.022  0.022 -0.771
-    ## 
-    ## [[2]]
-    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-    ## lmerModLmerTest]
-    ## Formula: ccs_bc ~ time * type + (1 | id)
-    ##    Data: dat
-    ## 
-    ## REML criterion at convergence: -349
-    ## 
-    ## Scaled residuals: 
-    ##      Min       1Q   Median       3Q      Max 
-    ## -2.33016 -0.44377 -0.04596  0.56783  2.12335 
-    ## 
-    ## Random effects:
-    ##  Groups   Name        Variance Std.Dev.
-    ##  id       (Intercept) 0.018962 0.13770 
-    ##  Residual             0.005645 0.07513 
-    ## Number of obs: 284, groups:  id, 142
-    ## 
-    ## Fixed effects:
-    ##               Estimate Std. Error         df t value Pr(>|t|)    
-    ## (Intercept)   0.234121   0.018236 278.363626  12.838   <2e-16 ***
-    ## time         -0.011764   0.008920 140.000003  -1.319    0.189    
-    ## type1        -0.002096   0.018236 278.363626  -0.115    0.909    
-    ## time:type1   -0.002811   0.008920 140.000003  -0.315    0.753    
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Correlation of Fixed Effects:
-    ##            (Intr) time   type1 
-    ## time       -0.734              
-    ## type1       0.028 -0.021       
-    ## time:type1 -0.021  0.028 -0.734
-    ## 
-    ## [[3]]
-    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-    ## lmerModLmerTest]
-    ## Formula: nr ~ time * type + (-1 + time | condition) + (1 | id)
-    ##    Data: dat
-    ## 
-    ## REML criterion at convergence: 265.4
-    ## 
-    ## Scaled residuals: 
-    ##      Min       1Q   Median       3Q      Max 
-    ## -2.59554 -0.44842  0.02171  0.48568  1.76425 
-    ## 
-    ## Random effects:
-    ##  Groups    Name        Variance  Std.Dev.
-    ##  id        (Intercept) 0.2263312 0.47574 
-    ##  condition time        0.0003591 0.01895 
-    ##  Residual              0.0400008 0.20000 
-    ## Number of obs: 284, groups:  id, 142; condition, 6
-    ## 
-    ## Fixed effects:
-    ##              Estimate Std. Error        df t value Pr(>|t|)    
-    ## (Intercept)   3.81760    0.05482 268.09998  69.644   <2e-16 ***
-    ## time          0.03769    0.02497   9.57301   1.509    0.164    
-    ## type1        -0.01084    0.05482 268.09998  -0.198    0.843    
-    ## time:type1    0.03891    0.02497   9.57301   1.558    0.152    
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Correlation of Fixed Effects:
-    ##            (Intr) time   type1 
-    ## time       -0.618              
-    ## type1       0.028 -0.017       
-    ## time:type1 -0.017  0.025 -0.618
-    ## 
-    ## [[4]]
-    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-    ## lmerModLmerTest]
-    ## Formula: nep ~ time * type + (-1 + time | condition) + (1 | id)
-    ##    Data: dat
-    ## 
-    ## REML criterion at convergence: 187.5
-    ## 
-    ## Scaled residuals: 
-    ##      Min       1Q   Median       3Q      Max 
-    ## -2.13567 -0.52383 -0.01767  0.49178  2.18200 
-    ## 
-    ## Random effects:
-    ##  Groups    Name        Variance  Std.Dev.
-    ##  id        (Intercept) 0.1427876 0.37787 
-    ##  condition time        0.0001482 0.01217 
-    ##  Residual              0.0352898 0.18786 
-    ## Number of obs: 284, groups:  id, 142; condition, 6
-    ## 
-    ## Fixed effects:
-    ##              Estimate Std. Error        df t value Pr(>|t|)    
-    ## (Intercept)   3.75582    0.04743 276.21351  79.181  < 2e-16 ***
-    ## time          0.07381    0.02285  14.88848   3.230  0.00565 ** 
-    ## type1        -0.03505    0.04743 276.21351  -0.739  0.46061    
-    ## time:type1    0.01894    0.02285  14.88848   0.829  0.42021    
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Correlation of Fixed Effects:
-    ##            (Intr) time   type1 
-    ## time       -0.688              
-    ## type1       0.028 -0.019       
-    ## time:type1 -0.019  0.027 -0.688
-    ## 
-    ## [[5]]
-    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-    ## lmerModLmerTest]
-    ## Formula: env_pc ~ time * type + (1 | id)
-    ##    Data: dat
-    ## 
-    ## REML criterion at convergence: 769
-    ## 
-    ## Scaled residuals: 
-    ##      Min       1Q   Median       3Q      Max 
-    ## -2.33852 -0.41115  0.01461  0.44995  1.90160 
-    ## 
-    ## Random effects:
-    ##  Groups   Name        Variance Std.Dev.
-    ##  id       (Intercept) 1.4722   1.2133  
-    ##  Residual             0.2278   0.4773  
-    ## Number of obs: 284, groups:  id, 142
-    ## 
-    ## Fixed effects:
-    ##              Estimate Std. Error        df t value Pr(>|t|)   
-    ## (Intercept)  -0.23777    0.13566 267.65387  -1.753  0.08081 . 
-    ## time          0.15874    0.05667 140.00000   2.801  0.00581 **
-    ## type1        -0.14234    0.13566 267.65387  -1.049  0.29502   
-    ## time:type1    0.10297    0.05667 140.00000   1.817  0.07134 . 
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Correlation of Fixed Effects:
-    ##            (Intr) time   type1 
-    ## time       -0.627              
-    ## type1       0.028 -0.018       
-    ## time:type1 -0.018  0.028 -0.627
-
-Follow up tests:
-
-``` r
-# iat
-contrast( emmeans(all.models[[1]],  ~ time | type))
-```
-
-    ## type = vr:
-    ##  contrast estimate     SE   df t.ratio p.value
-    ##  1 effect  -0.0327 0.0292 23.0  -1.118  0.2753
-    ##  2 effect   0.0327 0.0292 23.0   1.118  0.2753
-    ## 
-    ## type = control:
-    ##  contrast estimate     SE   df t.ratio p.value
-    ##  1 effect   0.0420 0.0286 21.2   1.470  0.1563
-    ##  2 effect  -0.0420 0.0286 21.2  -1.470  0.1563
-    ## 
-    ## Degrees-of-freedom method: kenward-roger 
-    ## P value adjustment: fdr method for 2 tests
-
-``` r
-# ccs
-contrast( emmeans(all.models[[2]],  ~ time | type))
-```
-
-    ## type = vr:
-    ##  contrast estimate      SE  df t.ratio p.value
-    ##  1 effect  0.00729 0.00640 140   1.139  0.2565
-    ##  2 effect -0.00729 0.00640 140  -1.139  0.2565
-    ## 
-    ## type = control:
-    ##  contrast estimate      SE  df t.ratio p.value
-    ##  1 effect  0.00448 0.00622 140   0.720  0.4728
-    ##  2 effect -0.00448 0.00622 140  -0.720  0.4728
-    ## 
-    ## Degrees-of-freedom method: kenward-roger 
-    ## P value adjustment: fdr method for 2 tests
-
-``` r
-# nr
-contrast( emmeans(all.models[[3]],  ~ time | type))
-```
-
-    ## type = vr:
-    ##  contrast  estimate     SE    df t.ratio p.value
-    ##  1 effect -0.038302 0.0179 10.66  -2.142  0.0562
-    ##  2 effect  0.038302 0.0179 10.66   2.142  0.0562
-    ## 
-    ## type = control:
-    ##  contrast  estimate     SE    df t.ratio p.value
-    ##  1 effect  0.000613 0.0174  9.67   0.035  0.9727
-    ##  2 effect -0.000613 0.0174  9.67  -0.035  0.9727
-    ## 
-    ## Degrees-of-freedom method: kenward-roger 
-    ## P value adjustment: fdr method for 2 tests
-
-``` r
-# nep
-contrast( emmeans(all.models[[4]],  ~ time | type))
-```
-
-    ## type = vr:
-    ##  contrast estimate     SE   df t.ratio p.value
-    ##  1 effect  -0.0464 0.0164 14.4  -2.833  0.0130
-    ##  2 effect   0.0464 0.0164 14.4   2.833  0.0130
-    ## 
-    ## type = control:
-    ##  contrast estimate     SE   df t.ratio p.value
-    ##  1 effect  -0.0274 0.0159 13.0  -1.721  0.1090
-    ##  2 effect   0.0274 0.0159 13.0   1.721  0.1090
-    ## 
-    ## Degrees-of-freedom method: kenward-roger 
-    ## P value adjustment: fdr method for 2 tests
-
 #### Model comparisons
 
 For the three VE conditions we need ot test the predictor `condition`
@@ -1686,23 +2032,381 @@ explained variance.
 <!-- lapply(diff_dvs, plotcond) -->
 <!-- ``` -->
 
+### Presence & SOD
+
+``` r
+lapply(presence.models, FUN = lmerTest:::summary.lmerModLmerTest)
+```
+
+    ## Coercing object to class 'lmerModLmerTest'
+    ## Coercing object to class 'lmerModLmerTest'
+    ## Coercing object to class 'lmerModLmerTest'
+    ## Coercing object to class 'lmerModLmerTest'
+    ## Coercing object to class 'lmerModLmerTest'
+
+    ## [[1]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: iat ~ ipq * time + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 163.6
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -2.69457 -0.54823 -0.02948  0.53493  2.01632 
+    ## 
+    ## Random effects:
+    ##  Groups   Name        Variance Std.Dev.
+    ##  id       (Intercept) 0.1131   0.3363  
+    ##  Residual             0.1080   0.3286  
+    ## Number of obs: 130, groups:  id, 65
+    ## 
+    ## Fixed effects:
+    ##              Estimate Std. Error        df t value Pr(>|t|)
+    ## (Intercept)  -0.58774    0.66781 101.74722  -0.880    0.381
+    ## ipq           0.14043    0.14134 101.74722   0.994    0.323
+    ## time         -0.09185    0.38404  63.00001  -0.239    0.812
+    ## ipq:time      0.03446    0.08128  63.00001   0.424    0.673
+    ## 
+    ## Correlation of Fixed Effects:
+    ##          (Intr) ipq    time  
+    ## ipq      -0.989              
+    ## time     -0.863  0.853       
+    ## ipq:time  0.853 -0.863 -0.989
+    ## 
+    ## [[2]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: ccs ~ ipq * time + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 120.7
+    ## 
+    ## Scaled residuals: 
+    ##     Min      1Q  Median      3Q     Max 
+    ## -1.7904 -0.3820 -0.1145  0.3312  2.1549 
+    ## 
+    ## Random effects:
+    ##  Groups   Name        Variance Std.Dev.
+    ##  id       (Intercept) 0.22587  0.4753  
+    ##  Residual             0.03731  0.1931  
+    ## Number of obs: 130, groups:  id, 65
+    ## 
+    ## Fixed effects:
+    ##              Estimate Std. Error        df t value Pr(>|t|)    
+    ## (Intercept)   2.11894    0.53069 121.79391   3.993 0.000112 ***
+    ## ipq          -0.14045    0.11232 121.79391  -1.251 0.213506    
+    ## time         -0.10019    0.22573  63.00000  -0.444 0.658668    
+    ## ipq:time      0.01788    0.04777  63.00000   0.374 0.709468    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Correlation of Fixed Effects:
+    ##          (Intr) ipq    time  
+    ## ipq      -0.989              
+    ## time     -0.638  0.631       
+    ## ipq:time  0.631 -0.638 -0.989
+    ## 
+    ## [[3]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: nr ~ ipq * time + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 104
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1.95321 -0.55273 -0.02821  0.50567  1.89383 
+    ## 
+    ## Random effects:
+    ##  Groups   Name        Variance Std.Dev.
+    ##  id       (Intercept) 0.14358  0.3789  
+    ##  Residual             0.04248  0.2061  
+    ## Number of obs: 130, groups:  id, 65
+    ## 
+    ## Fixed effects:
+    ##              Estimate Std. Error        df t value Pr(>|t|)    
+    ## (Intercept)   3.63662    0.49306 125.31336   7.376 1.96e-11 ***
+    ## ipq           0.03827    0.10435 125.31336   0.367    0.714    
+    ## time         -0.08722    0.24088  63.00001  -0.362    0.718    
+    ## ipq:time      0.03467    0.05098  63.00001   0.680    0.499    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Correlation of Fixed Effects:
+    ##          (Intr) ipq    time  
+    ## ipq      -0.989              
+    ## time     -0.733  0.725       
+    ## ipq:time  0.725 -0.733 -0.989
+    ## 
+    ## [[4]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: nep ~ ipq * time + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 85.7
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1.41089 -0.54793 -0.05323  0.49528  1.82764 
+    ## 
+    ## Random effects:
+    ##  Groups   Name        Variance Std.Dev.
+    ##  id       (Intercept) 0.13287  0.3645  
+    ##  Residual             0.03485  0.1867  
+    ## Number of obs: 130, groups:  id, 65
+    ## 
+    ## Fixed effects:
+    ##              Estimate Std. Error        df t value Pr(>|t|)    
+    ## (Intercept)   3.45098    0.45794 125.94330   7.536  8.3e-12 ***
+    ## ipq           0.05561    0.09692 125.94330   0.574    0.567    
+    ## time          0.01510    0.21816  63.00000   0.069    0.945    
+    ## ipq:time      0.01762    0.04617  63.00000   0.382    0.704    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Correlation of Fixed Effects:
+    ##          (Intr) ipq    time  
+    ## ipq      -0.989              
+    ## time     -0.715  0.706       
+    ## ipq:time  0.706 -0.715 -0.989
+    ## 
+    ## [[5]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: env_pc ~ ipq * time + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 348.5
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1.70780 -0.41684 -0.02183  0.43990  1.79021 
+    ## 
+    ## Random effects:
+    ##  Groups   Name        Variance Std.Dev.
+    ##  id       (Intercept) 1.210    1.100   
+    ##  Residual             0.254    0.504   
+    ## Number of obs: 130, groups:  id, 65
+    ## 
+    ## Fixed effects:
+    ##              Estimate Std. Error        df t value Pr(>|t|)
+    ## (Intercept)  -2.05376    1.30141 125.23350  -1.578    0.117
+    ## ipq           0.35511    0.27543 125.23350   1.289    0.200
+    ## time         -0.01667    0.58900  62.99999  -0.028    0.978
+    ## ipq:time      0.06329    0.12466  62.99999   0.508    0.613
+    ## 
+    ## Correlation of Fixed Effects:
+    ##          (Intr) ipq    time  
+    ## ipq      -0.989              
+    ## time     -0.679  0.671       
+    ## ipq:time  0.671 -0.679 -0.989
+
+``` r
+lapply(sod.models, FUN = lmerTest:::summary.lmerModLmerTest)
+```
+
+    ## Coercing object to class 'lmerModLmerTest'
+    ## Coercing object to class 'lmerModLmerTest'
+    ## Coercing object to class 'lmerModLmerTest'
+    ## Coercing object to class 'lmerModLmerTest'
+    ## Coercing object to class 'lmerModLmerTest'
+
+    ## [[1]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: iat ~ sod * time + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 176.3
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -2.80798 -0.56967  0.02637  0.60711  1.76928 
+    ## 
+    ## Random effects:
+    ##  Groups   Name        Variance Std.Dev.
+    ##  id       (Intercept) 0.1244   0.3528  
+    ##  Residual             0.1045   0.3233  
+    ## Number of obs: 138, groups:  id, 69
+    ## 
+    ## Fixed effects:
+    ##               Estimate Std. Error         df t value Pr(>|t|)
+    ## (Intercept)   0.109157   0.481524 111.121118   0.227    0.821
+    ## sod          -0.006195   0.094734 111.121118  -0.065    0.948
+    ## time         -0.254809   0.273689  67.000002  -0.931    0.355
+    ## sod:time      0.064295   0.053845  67.000002   1.194    0.237
+    ## 
+    ## Correlation of Fixed Effects:
+    ##          (Intr) sod    time  
+    ## sod      -0.980              
+    ## time     -0.853  0.835       
+    ## sod:time  0.835 -0.853 -0.980
+    ## 
+    ## [[2]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: ccs ~ sod * time + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 135.9
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1.73181 -0.38435 -0.09369  0.32377  2.19186 
+    ## 
+    ## Random effects:
+    ##  Groups   Name        Variance Std.Dev.
+    ##  id       (Intercept) 0.22349  0.4727  
+    ##  Residual             0.04139  0.2034  
+    ## Number of obs: 138, groups:  id, 69
+    ## 
+    ## Fixed effects:
+    ##              Estimate Std. Error        df t value Pr(>|t|)    
+    ## (Intercept)   1.65984    0.39278 131.61473   4.226 4.42e-05 ***
+    ## sod          -0.04011    0.07727 131.61473  -0.519    0.605    
+    ## time          0.07598    0.17224  67.00001   0.441    0.661    
+    ## sod:time     -0.01672    0.03389  67.00001  -0.493    0.623    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Correlation of Fixed Effects:
+    ##          (Intr) sod    time  
+    ## sod      -0.980              
+    ## time     -0.658  0.644       
+    ## sod:time  0.644 -0.658 -0.980
+    ## 
+    ## [[3]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: nr ~ sod * time + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 109.1
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1.91062 -0.53432 -0.01933  0.52449  1.83663 
+    ## 
+    ## Random effects:
+    ##  Groups   Name        Variance Std.Dev.
+    ##  id       (Intercept) 0.14449  0.3801  
+    ##  Residual             0.04107  0.2027  
+    ## Number of obs: 138, groups:  id, 69
+    ## 
+    ## Fixed effects:
+    ##              Estimate Std. Error        df t value Pr(>|t|)    
+    ## (Intercept)   3.98028    0.35411 133.57257  11.240   <2e-16 ***
+    ## sod          -0.03485    0.06967 133.57257  -0.500    0.618    
+    ## time         -0.03995    0.17159  67.00000  -0.233    0.817    
+    ## sod:time      0.02341    0.03376  67.00000   0.693    0.490    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Correlation of Fixed Effects:
+    ##          (Intr) sod    time  
+    ## sod      -0.980              
+    ## time     -0.727  0.712       
+    ## sod:time  0.712 -0.727 -0.980
+    ## 
+    ## [[4]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: nep ~ sod * time + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 91.4
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1.46069 -0.58390 -0.04105  0.50130  1.89785 
+    ## 
+    ## Random effects:
+    ##  Groups   Name        Variance Std.Dev.
+    ##  id       (Intercept) 0.13382  0.3658  
+    ##  Residual             0.03445  0.1856  
+    ## Number of obs: 138, groups:  id, 69
+    ## 
+    ## Fixed effects:
+    ##              Estimate Std. Error        df t value Pr(>|t|)    
+    ## (Intercept)   3.33827    0.33121 133.97744  10.079   <2e-16 ***
+    ## sod           0.07682    0.06516 133.97744   1.179    0.241    
+    ## time          0.18737    0.15714  67.00000   1.192    0.237    
+    ## sod:time     -0.01900    0.03092  67.00000  -0.615    0.541    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Correlation of Fixed Effects:
+    ##          (Intr) sod    time  
+    ## sod      -0.980              
+    ## time     -0.712  0.697       
+    ## sod:time  0.697 -0.712 -0.980
+    ## 
+    ## [[5]]
+    ## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+    ## lmerModLmerTest]
+    ## Formula: env_pc ~ sod * time + (1 | id)
+    ##    Data: dat
+    ## 
+    ## REML criterion at convergence: 371.8
+    ## 
+    ## Scaled residuals: 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1.76166 -0.43974  0.00888  0.44844  1.81302 
+    ## 
+    ## Random effects:
+    ##  Groups   Name        Variance Std.Dev.
+    ##  id       (Intercept) 1.2802   1.1315  
+    ##  Residual             0.2437   0.4937  
+    ## Number of obs: 138, groups:  id, 69
+    ## 
+    ## Fixed effects:
+    ##               Estimate Std. Error         df t value Pr(>|t|)
+    ## (Intercept)  -0.956276   0.946384 132.028220  -1.010    0.314
+    ## sod           0.115718   0.186190 132.028220   0.622    0.535
+    ## time         -0.001958   0.417982  66.999999  -0.005    0.996
+    ## sod:time      0.052956   0.082233  67.000000   0.644    0.522
+    ## 
+    ## Correlation of Fixed Effects:
+    ##          (Intr) sod    time  
+    ## sod      -0.980              
+    ## time     -0.662  0.649       
+    ## sod:time  0.649 -0.662 -0.980
+
 # Export
+
+## Correlation table
+
+``` r
+lower <- round(cor(data[dvs[-5]]),2)
+lower[upper.tri(lower)] <- ""
+lower <- as.data.frame(lower)
+rownames(lower) <- toupper(rownames(lower))
+colnames(lower) <- toupper(colnames(lower))
+print(xtable(lower, label = "tab:cortable", 
+       caption = "Correlation table of the four environmental attitudes measures. Computed on the untranformed CCS scale."), file = "analysisOutputs/tables/correlationtable.tex")
+```
 
 ## Tables for models
 
 First, we define a couple of helping functions
 
 ``` r
+#lmermods = all.models
+#  x <- lmermods[[1]]
+
 make.x.table <- function(lmermods, save = TRUE, add = ""){
-  lapply(lmermods, function(x) formula(x)[2])
+  #lapply(lmermods, function(x) formula(x)[2])
   dvs <- as.character(lapply(lmermods, function(x) as.character(formula(x)[2])))
   iv <- sub("\\ .*", "", lmermods[[1]]@call$formula[3])
 
   
-  
   helpf <- function(x){
     # get fixed effects table
-    fix.temp <- round(as.data.frame(summary(x)$coefficients), 3)
+    fix.temp <- round(as.data.frame(lmerTest:::summary.lmerModLmerTest(x)$coefficients), 3)
 
     # calculate and round confidence intervals
     conf.temp <- as.data.frame(confint(x, method = "profile"))
@@ -1717,7 +2421,8 @@ make.x.table <- function(lmermods, save = TRUE, add = ""){
    fix.temp["DV"][1,] <- "deleteme"
 
     fix.temp <- rownames_to_column(fix.temp, var = "Coef")
-    fix.temp <- fix.temp[, c(6, 1, 2, 5, 3, 4)]
+    fix.temp <- fix.temp[, c(8, 1, 2, 7, 5, 4, 6)]
+    colnames(fix.temp)[7] <- "p value"
 
     # return value
     return(fix.temp)
@@ -1737,7 +2442,7 @@ make.x.table <- function(lmermods, save = TRUE, add = ""){
   #cond <- toupper(strsplit(rownames(fixed.effects.df)[l.temp], split = " ")[[1]][5])
 
   rownames(fixed.effects.df) <- NULL
-  tabl <- xtable(fixed.effects.df[-6],
+  tabl <- xtable(fixed.effects.df,
                  caption = paste(toupper(iv), "Models",  add),
                  label = paste("tab:",add , iv, "-models", sep = ""))
 
@@ -1763,12 +2468,23 @@ make.x.table <- function(lmermods, save = TRUE, add = ""){
 Then we create and save the tables:
 
 ``` r
-make.x.table(all.models, save = FALSE)
+make.x.table(all.models[-5], save = FALSE)
 ```
 
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
+
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
+
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
+
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
 
     ## Warning in nextpar(mat, cc, i, delta, lowcut, upcut): unexpected decrease in
@@ -1779,40 +2495,33 @@ make.x.table(all.models, save = FALSE)
     ## Warning in confint.thpr(pp, level = level, zeta = zeta): bad spline fit
     ## for .sig02: falling back to linear interpolation
 
-    ## Computing profile confidence intervals ...
-
     ## % latex table generated in R 4.1.2 by xtable 1.8-4 package
-    ## % Sat Feb 19 00:29:16 2022
+    ## % Tue Mar  1 15:19:14 2022
     ## \begin{table}[ht]
     ## \centering
-    ## \begin{tabular}{llrlr}
+    ## \begin{tabular}{llrlrrr}
     ##   \hline
-    ## DV & Coef & Estimate & CI & Std. Error \\ 
+    ## DV & Coef & Estimate & CI & t value & df & p value \\ 
     ##   \hline
-    ## iat & (Intercept) & 0.23 & [0.106; 0.355] & 0.06 \\ 
-    ##    & time & -0.01 & [-0.085; 0.066] & 0.04 \\ 
-    ##    & type1 & -0.15 & [-0.276; -0.028] & 0.06 \\ 
-    ##    & time:type1 & 0.07 & [-0.001; 0.15] & 0.04 \\ 
+    ## iat & (Intercept) & 0.23 & [0.106; 0.355] & 3.63 & 225.16 & 0.00 \\ 
+    ##    & time & -0.01 & [-0.085; 0.066] & -0.23 & 20.40 & 0.82 \\ 
+    ##    & type1 & -0.15 & [-0.276; -0.028] & -2.39 & 225.16 & 0.02 \\ 
+    ##    & time:type1 & 0.07 & [-0.001; 0.15] & 1.83 & 20.40 & 0.08 \\ 
     ##    \hline
-    ## ccs\_bc & (Intercept) & 0.23 & [0.199; 0.27] & 0.02 \\ 
-    ##    & time & -0.01 & [-0.029; 0.006] & 0.01 \\ 
-    ##    & type1 & -0.00 & [-0.038; 0.034] & 0.02 \\ 
-    ##    & time:type1 & -0.00 & [-0.02; 0.015] & 0.01 \\ 
+    ## ccs\_bc & (Intercept) & 0.23 & [0.199; 0.27] & 12.84 & 278.36 & 0.00 \\ 
+    ##    & time & -0.01 & [-0.029; 0.006] & -1.32 & 140.00 & 0.19 \\ 
+    ##    & type1 & -0.00 & [-0.038; 0.034] & -0.12 & 278.36 & 0.91 \\ 
+    ##    & time:type1 & -0.00 & [-0.02; 0.015] & -0.32 & 140.00 & 0.75 \\ 
     ##    \hline
-    ## nr & (Intercept) & 3.82 & [3.71; 3.925] & 0.06 \\ 
-    ##    & time & 0.04 & [-0.009; 0.085] & 0.03 \\ 
-    ##    & type1 & -0.01 & [-0.118; 0.096] & 0.06 \\ 
-    ##    & time:type1 & 0.04 & [-0.008; 0.086] & 0.03 \\ 
+    ## nr & (Intercept) & 3.82 & [3.71; 3.925] & 69.64 & 268.10 & 0.00 \\ 
+    ##    & time & 0.04 & [-0.009; 0.085] & 1.51 & 9.57 & 0.16 \\ 
+    ##    & type1 & -0.01 & [-0.118; 0.096] & -0.20 & 268.10 & 0.84 \\ 
+    ##    & time:type1 & 0.04 & [-0.008; 0.086] & 1.56 & 9.57 & 0.15 \\ 
     ##    \hline
-    ## nep & (Intercept) & 3.76 & [3.663; 3.849] & 0.05 \\ 
-    ##    & time & 0.07 & [0.03; 0.117] & 0.02 \\ 
-    ##    & type1 & -0.04 & [-0.128; 0.058] & 0.05 \\ 
-    ##    & time:type1 & 0.02 & [-0.025; 0.063] & 0.02 \\ 
-    ##    \hline
-    ## env\_pc & (Intercept) & -0.24 & [-0.503; 0.027] & 0.14 \\ 
-    ##    & time & 0.16 & [0.048; 0.27] & 0.06 \\ 
-    ##    & type1 & -0.14 & [-0.407; 0.123] & 0.14 \\ 
-    ##    & time:type1 & 0.10 & [-0.008; 0.214] & 0.06 \\ 
+    ## nep & (Intercept) & 3.76 & [3.663; 3.849] & 79.18 & 276.21 & 0.00 \\ 
+    ##    & time & 0.07 & [0.03; 0.117] & 3.23 & 14.89 & 0.01 \\ 
+    ##    & type1 & -0.04 & [-0.128; 0.058] & -0.74 & 276.21 & 0.46 \\ 
+    ##    & time:type1 & 0.02 & [-0.025; 0.063] & 0.83 & 14.89 & 0.42 \\ 
     ##    \hline
     ## \end{tabular}
     ## \caption{TIME Models } 
@@ -1820,57 +2529,59 @@ make.x.table(all.models, save = FALSE)
     ## \end{table}
 
 ``` r
-make.x.table(vr.models, save = FALSE)
+make.x.table(vr.models[-5], save = FALSE)
 ```
 
+    ## Coercing object to class 'lmerModLmerTest'
     ## Computing profile confidence intervals ...
+
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
+
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
-    ## Computing profile confidence intervals ...
+
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
 
     ## % latex table generated in R 4.1.2 by xtable 1.8-4 package
-    ## % Sat Feb 19 00:29:20 2022
+    ## % Tue Mar  1 15:19:16 2022
     ## \begin{table}[ht]
     ## \centering
-    ## \begin{tabular}{llrlr}
+    ## \begin{tabular}{llrlrrr}
     ##   \hline
-    ## DV & Coef & Estimate & CI & Std. Error \\ 
+    ## DV & Coef & Estimate & CI & t value & df & p value \\ 
     ##   \hline
-    ## iat & (Intercept) & 0.08 & [-0.109; 0.266] & 0.10 \\ 
-    ##    & condition1 & 0.10 & [-0.166; 0.364] & 0.14 \\ 
-    ##    & condition2 & -0.23 & [-0.491; 0.039] & 0.14 \\ 
-    ##    & time & 0.07 & [-0.043; 0.173] & 0.06 \\ 
-    ##    & condition1:time & -0.08 & [-0.23; 0.076] & 0.08 \\ 
-    ##    & condition2:time & 0.04 & [-0.114; 0.192] & 0.08 \\ 
+    ## iat & (Intercept) & 0.08 & [-0.109; 0.266] & 0.81 & 106.86 & 0.42 \\ 
+    ##    & condition1 & 0.10 & [-0.166; 0.364] & 0.72 & 106.86 & 0.47 \\ 
+    ##    & condition2 & -0.23 & [-0.491; 0.039] & -1.65 & 106.86 & 0.10 \\ 
+    ##    & time & 0.07 & [-0.043; 0.173] & 1.17 & 66.00 & 0.24 \\ 
+    ##    & condition1:time & -0.08 & [-0.23; 0.076] & -0.98 & 66.00 & 0.33 \\ 
+    ##    & condition2:time & 0.04 & [-0.114; 0.192] & 0.50 & 66.00 & 0.62 \\ 
     ##    \hline
-    ## ccs\_bc & (Intercept) & 0.23 & [0.181; 0.283] & 0.03 \\ 
-    ##    & condition1 & -0.06 & [-0.129; 0.014] & 0.04 \\ 
-    ##    & condition2 & 0.01 & [-0.057; 0.086] & 0.04 \\ 
-    ##    & time & -0.01 & [-0.038; 0.009] & 0.01 \\ 
-    ##    & condition1:time & 0.01 & [-0.018; 0.048] & 0.02 \\ 
-    ##    & condition2:time & 0.01 & [-0.026; 0.04] & 0.02 \\ 
+    ## ccs\_bc & (Intercept) & 0.23 & [0.181; 0.283] & 8.84 & 131.56 & 0.00 \\ 
+    ##    & condition1 & -0.06 & [-0.129; 0.014] & -1.54 & 131.56 & 0.12 \\ 
+    ##    & condition2 & 0.01 & [-0.057; 0.086] & 0.38 & 131.56 & 0.70 \\ 
+    ##    & time & -0.01 & [-0.038; 0.009] & -1.21 & 66.00 & 0.23 \\ 
+    ##    & condition1:time & 0.01 & [-0.018; 0.048] & 0.88 & 66.00 & 0.38 \\ 
+    ##    & condition2:time & 0.01 & [-0.026; 0.04] & 0.41 & 66.00 & 0.68 \\ 
     ##    \hline
-    ## nr & (Intercept) & 3.81 & [3.674; 3.939] & 0.07 \\ 
-    ##    & condition1 & 0.10 & [-0.091; 0.283] & 0.10 \\ 
-    ##    & condition2 & -0.29 & [-0.476; -0.102] & 0.10 \\ 
-    ##    & time & 0.08 & [0.009; 0.144] & 0.04 \\ 
-    ##    & condition1:time & 0.01 & [-0.081; 0.11] & 0.05 \\ 
-    ##    & condition2:time & 0.04 & [-0.058; 0.132] & 0.05 \\ 
+    ## nr & (Intercept) & 3.81 & [3.674; 3.939] & 55.49 & 129.34 & 0.00 \\ 
+    ##    & condition1 & 0.10 & [-0.091; 0.283] & 0.99 & 129.34 & 0.33 \\ 
+    ##    & condition2 & -0.29 & [-0.476; -0.102] & -2.98 & 129.34 & 0.00 \\ 
+    ##    & time & 0.08 & [0.009; 0.144] & 2.21 & 66.00 & 0.03 \\ 
+    ##    & condition1:time & 0.01 & [-0.081; 0.11] & 0.30 & 66.00 & 0.77 \\ 
+    ##    & condition2:time & 0.04 & [-0.058; 0.132] & 0.76 & 66.00 & 0.45 \\ 
     ##    \hline
-    ## nep & (Intercept) & 3.72 & [3.591; 3.85] & 0.07 \\ 
-    ##    & condition1 & -0.04 & [-0.228; 0.138] & 0.10 \\ 
-    ##    & condition2 & -0.06 & [-0.243; 0.123] & 0.10 \\ 
-    ##    & time & 0.09 & [0.031; 0.154] & 0.03 \\ 
-    ##    & condition1:time & 0.02 & [-0.064; 0.11] & 0.04 \\ 
-    ##    & condition2:time & 0.03 & [-0.055; 0.119] & 0.04 \\ 
-    ##    \hline
-    ## env\_pc & (Intercept) & -0.38 & [-0.746; -0.014] & 0.19 \\ 
-    ##    & condition1 & 0.21 & [-0.303; 0.733] & 0.27 \\ 
-    ##    & condition2 & -0.53 & [-1.05; -0.015] & 0.27 \\ 
-    ##    & time & 0.26 & [0.097; 0.426] & 0.09 \\ 
-    ##    & condition1:time & -0.01 & [-0.243; 0.223] & 0.12 \\ 
-    ##    & condition2:time & 0.07 & [-0.163; 0.303] & 0.12 \\ 
+    ## nep & (Intercept) & 3.72 & [3.591; 3.85] & 55.49 & 132.00 & 0.00 \\ 
+    ##    & condition1 & -0.04 & [-0.228; 0.138] & -0.48 & 132.00 & 0.63 \\ 
+    ##    & condition2 & -0.06 & [-0.243; 0.123] & -0.63 & 132.00 & 0.53 \\ 
+    ##    & time & 0.09 & [0.031; 0.154] & 2.94 & 66.00 & 0.01 \\ 
+    ##    & condition1:time & 0.02 & [-0.064; 0.11] & 0.52 & 66.00 & 0.60 \\ 
+    ##    & condition2:time & 0.03 & [-0.055; 0.119] & 0.71 & 66.00 & 0.48 \\ 
     ##    \hline
     ## \end{tabular}
     ## \caption{CONDITION Models } 
@@ -1878,12 +2589,23 @@ make.x.table(vr.models, save = FALSE)
     ## \end{table}
 
 ``` r
-make.x.table(all.models, save = TRUE)
+make.x.table(all.models[-5], save = TRUE)
 ```
 
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
+
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
+
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
+
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
 
     ## Warning in nextpar(mat, cc, i, delta, lowcut, upcut): unexpected decrease in
@@ -1894,16 +2616,23 @@ make.x.table(all.models, save = TRUE)
     ## Warning in confint.thpr(pp, level = level, zeta = zeta): bad spline fit
     ## for .sig02: falling back to linear interpolation
 
-    ## Computing profile confidence intervals ...
-
 ``` r
-make.x.table(vr.models, save = TRUE)
+make.x.table(vr.models[-5], save = TRUE)
 ```
 
+    ## Coercing object to class 'lmerModLmerTest'
     ## Computing profile confidence intervals ...
+
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
+
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
-    ## Computing profile confidence intervals ...
+
+    ## Coercing object to class 'lmerModLmerTest'
+
     ## Computing profile confidence intervals ...
 
 ## Plots
@@ -2085,6 +2814,8 @@ ci.plot <- function(colorby = "condition"){
 
       geom_errorbar(aes(ymin = df$`2.5 %`, ymax = df$`97.5 %`), position = "dodge2", width = 0.2) +
       ggthemes::theme_tufte() +
+      ylab("scale value") + 
+      
       scale_x_discrete() +
       xlim(c("before", "after"))
     }
@@ -2213,7 +2944,7 @@ vr.nonvr.mean <- do.call("rbind", vr.nonvr.mean.list)
 
     ## Warning: Use of `df$`97.5 %`` is discouraged. Use `97.5 %` instead.
 
-![](analysis_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
 
 Then for only between the VE conditions:
 
@@ -2233,13 +2964,83 @@ onlyvr.cond.mean <- do.call("rbind", onlyvr.cond.mean.list)
 
     ## Warning: Use of `df$`97.5 %`` is discouraged. Use `97.5 %` instead.
 
-![](analysis_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
+![](analysis_files/figure-gfm/unnamed-chunk-56-1.png)<!-- -->
+
+### backtransform ccs
+
+``` r
+reverse <- function(lambda){
+  
+  function(x){
+    exp(log(lambda * x + 1) / lambda)
+  }
+}
+
+
+reverse_ccs <- reverse(lambda = lambda_ccs)
+```
+
+``` r
+which.ccs <- which(onlyvr.cond.mean$dv=="ccs_bc")
+which.ccs2 <- which(vr.nonvr.mean$dv=="ccs_bc")
+
+vr.nonvr.mean2 <- vr.nonvr.mean
+vr.nonvr.mean2[which.ccs2,c("ml.value", "2.5 %","97.5 %")] <- reverse_ccs(vr.nonvr.mean[which.ccs2,c("ml.value", "2.5 %","97.5 %")] )
+
+
+onlyvr.cond.mean2 <- onlyvr.cond.mean
+onlyvr.cond.mean2[which.ccs,c("ml.value", "2.5 %","97.5 %")] <- reverse_ccs(onlyvr.cond.mean[which.ccs,c("ml.value", "2.5 %","97.5 %")] )
+  
+
+
+# change dv names:
+onlyvr.cond.mean2$dv[onlyvr.cond.mean2$dv=="ccs_bc"] <- "ccs"
+vr.nonvr.mean2$dv[vr.nonvr.mean2$dv=="ccs_bc"] <- "ccs"
+
+
+onlyvr.cond.mean2$dv <- toupper(onlyvr.cond.mean2$dv)
+vr.nonvr.mean2$dv   <- toupper(vr.nonvr.mean2$dv)
+
+# change condition names:
+onlyvr.cond.mean2 <-tibble( onlyvr.cond.mean2 ) %>% 
+  dplyr::mutate(condition = ifelse(condition =="b", "real+",
+                              ifelse(condition == "c", "real-",
+                                  ifelse(condition == "a", "abstract", condition))))
+```
+
+``` r
+(cond.ci.plot2 <- ci.plot.condition(onlyvr.cond.mean2)+
+  guides(color=guide_legend(title="condition")))
+```
+
+    ## Scale for 'x' is already present. Adding another scale for 'x', which will
+    ## replace the existing scale.
+
+    ## Warning: Use of `df$`2.5 %`` is discouraged. Use `2.5 %` instead.
+
+    ## Warning: Use of `df$`97.5 %`` is discouraged. Use `97.5 %` instead.
+
+![](analysis_files/figure-gfm/unnamed-chunk-59-1.png)<!-- -->
+
+``` r
+(vr.ci.plot2 <- ci.plot.vr(vr.nonvr.mean2) +
+  guides(color=guide_legend(title="type")))
+```
+
+    ## Scale for 'x' is already present. Adding another scale for 'x', which will
+    ## replace the existing scale.
+
+    ## Warning: Use of `df$`2.5 %`` is discouraged. Use `2.5 %` instead.
+
+    ## Warning: Use of `df$`97.5 %`` is discouraged. Use `97.5 %` instead.
+
+![](analysis_files/figure-gfm/unnamed-chunk-60-1.png)<!-- -->
 
 save plots
 
 ``` r
-pdf(file = "analysisOutputs/plots/vr_ci_plot.pdf", width = 7, height = 5)
-vr.ci.plot
+pdf(file = "analysisOutputs/plots/vr_ci_plot2.pdf", width = 7, height = 5)
+vr.ci.plot2
 ```
 
     ## Warning: Use of `df$`2.5 %`` is discouraged. Use `2.5 %` instead.
@@ -2254,8 +3055,8 @@ dev.off()
     ##                 2
 
 ``` r
-pdf(file = "analysisOutputs/plots/cond_ci_plot.pdf", width = 7, height = 5)
-cond.ci.plot
+pdf(file = "analysisOutputs/plots/cond_ci_plot2.pdf", width = 7, height = 5)
+cond.ci.plot2
 ```
 
     ## Warning: Use of `df$`2.5 %`` is discouraged. Use `2.5 %` instead.
