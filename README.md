@@ -7,4 +7,6 @@ You can just open the analysis.md file on github and look through the analysis.
 Alternatively, you can run the analysis.Rmd file. 
 
 Data has been anonymised. 
-Data cleaning and the IAT scoring process has been conducted in a separate file. 
+Data cleaning and the IAT scoring process conducted in a separate file.
+The function for the IAT scoring is accessible in the file `iat_function.R`.
+
