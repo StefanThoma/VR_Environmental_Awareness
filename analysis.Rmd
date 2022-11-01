@@ -74,7 +74,20 @@ c == realistic but badly so
 
 
 # Descriptives
+## IAT validity
 
+Does IAT correlate to the other measures?
+```{r}
+cor(data %>% ungroup() %>% dplyr::select(iat, nep, ccs, nr), use = "pairwise.complete.obs")
+
+cor.test.f <- Vectorize(FUN = function(var){
+  cor.test(data$iat, data[[var]], arg = "two.sided")
+})
+
+cor.test.f(c("nep", "ccs", "nr"))
+```
+The IAT scores correlated significantly with the nr scores (r = 0.137, p = 0.021) and with the nep scores (r = 0.139, p = 0.019) but not significantly with ccs scores (r = -0.054, p = .368). 
+The signs of the correlations were as expected.
 
 ## Reliability
 
